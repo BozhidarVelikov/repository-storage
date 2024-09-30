@@ -2,6 +2,8 @@ package com.bvelikov.repository_storage.model;
 
 import jakarta.persistence.*;
 
+import java.util.Set;
+
 @Entity
 @Table(name = "repositories")
 public class Repository {
@@ -11,6 +13,9 @@ public class Repository {
 
     @Column(nullable = false, unique = true)
     private String url;
+
+    @OneToMany(mappedBy = "repository")
+    private Set<Secret> secrets;
 
     public Long getId() {
         return id;
