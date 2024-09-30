@@ -26,7 +26,6 @@ public class RepositoryController {
             RepositoryDTO dto = new RepositoryDTO();
             dto.setId(repository.getId());
             dto.setUrl(repository.getUrl());
-            dto.setType(repository.getType());
 
             dtos.add(dto);
         });
@@ -42,7 +41,6 @@ public class RepositoryController {
         RepositoryDTO dto = new RepositoryDTO();
         dto.setId(repository.getId());
         dto.setUrl(repository.getUrl());
-        dto.setType(repository.getType());
 
         return dto;
     }
@@ -51,7 +49,6 @@ public class RepositoryController {
     public RepositoryDTO saveRepository(@RequestBody RepositoryDTO repositoryDTO) {
         Repository repository = new Repository();
         repository.setUrl(repositoryDTO.getUrl());
-        repository.setType(repositoryDTO.getType());
 
         Repository savedRepo = repositoryRepository.save(repository);
         repositoryDTO.setId(savedRepo.getId());
@@ -62,6 +59,7 @@ public class RepositoryController {
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteRepository(@PathVariable Long id) {
         repositoryRepository.deleteById(id);
+
         return ResponseEntity.noContent().build();
     }
 }
