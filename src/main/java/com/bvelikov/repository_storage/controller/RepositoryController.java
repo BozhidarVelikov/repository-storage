@@ -50,10 +50,26 @@ public class RepositoryController {
         Repository repository = new Repository();
         repository.setUrl(repositoryDTO.getUrl());
 
-        Repository savedRepo = repositoryRepository.save(repository);
-        repositoryDTO.setId(savedRepo.getId());
+        Repository savedRepository = repositoryRepository.save(repository);
+        repositoryDTO.setId(savedRepository.getId());
 
         return repositoryDTO;
+    }
+
+    @PutMapping("/{id}")
+    public RepositoryDTO updateRepository(@PathVariable Long id, @RequestBody RepositoryDTO repositoryDTO) {
+        Repository repository = repositoryRepository.findById(id)
+                .map(existingRepository -> {
+                    existingRepository.setUrl(repositoryDTO.getUrl());
+                    return repositoryRepository.save(existingRepository);
+                })
+                .orElseThrow(() -> new RepositoryNotFoundException("Repository not found with id: " + id));
+
+        RepositoryDTO dto = new RepositoryDTO();
+        dto.setId(repository.getId());
+        dto.setUrl(repository.getUrl());
+
+        return dto;
     }
 
     @DeleteMapping("/{id}")
