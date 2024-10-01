@@ -21,6 +21,29 @@ public class SecretController {
     @Autowired
     private RepositoryRepository repositoryRepository;
 
+    @PostMapping("/verify")
+    public ResponseEntity<Void> verifySecret(@RequestParam Long repositoryId, @RequestBody SecretDTO secretDTO) {
+        Optional<Repository> repository = repositoryRepository.findById(repositoryId);
+        if (repository.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+
+        Secret secret = secretRepository.findByRepositoryAndSecretKey(repository.get(), secretDTO.getSecretKey());
+
+        String decryptedValue;
+        try {
+            decryptedValue = EncryptionUtil.decrypt(secret.getSecretValue());
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().build();
+        }
+
+        if (secretDTO.getSecretValue().equals(decryptedValue)) {
+            return ResponseEntity.ok().build();
+        }
+
+        return ResponseEntity.badRequest().build();
+    }
+
     @PostMapping("/")
     public ResponseEntity<Void> saveSecret(@RequestParam Long repositoryId, @RequestBody SecretDTO secretDTO) {
         Optional<Repository> repository = repositoryRepository.findById(repositoryId);
@@ -45,6 +68,28 @@ public class SecretController {
         return ResponseEntity.noContent().build();
     }
 
+    @PutMapping("/")
+    public ResponseEntity<Void> updateSecret(@RequestParam Long repositoryId, @RequestBody SecretDTO secretDTO) {
+        Optional<Repository> repository = repositoryRepository.findById(repositoryId);
+        if (repository.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+
+        String encryptedValue;
+        try {
+            encryptedValue = EncryptionUtil.encrypt(secretDTO.getSecretValue());
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().build();
+        }
+
+        Secret secret = secretRepository.findByRepositoryAndSecretKey(repository.get(), secretDTO.getSecretKey());
+        secret.setSecretValue(encryptedValue);
+
+        secretRepository.save(secret);
+
+        return ResponseEntity.noContent().build();
+    }
+
     @DeleteMapping("/")
     public ResponseEntity<Void> deleteSecret(@RequestParam Long repositoryId, @RequestParam String secretKey) {
         Optional<Repository> repository = repositoryRepository.findById(repositoryId);
@@ -52,7 +97,8 @@ public class SecretController {
             return ResponseEntity.notFound().build();
         }
 
-        secretRepository.deleteByRepositoryAndSecretKey(repository.get(), secretKey);
+        Secret secret = secretRepository.findByRepositoryAndSecretKey(repository.get(), secretKey);
+        secretRepository.delete(secret);
 
         return ResponseEntity.noContent().build();
     }
