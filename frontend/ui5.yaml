@@ -1,0 +1,13 @@
+specVersion: "3.2"
+metadata:
+  name: repository-storage
+type: application
+framework:
+  name: OpenUI5
+  version: "1.129.0"
+  libraries:
+    - name: sap.m
+    - name: sap.tnt
+    - name: sap.ui.core
+    - name: sap.ui.layout
+    - name: themelib_sap_horizon
