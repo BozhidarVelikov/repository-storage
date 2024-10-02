@@ -21,26 +21,22 @@ sap.ui.define([
                             {
                                 secretKey: "key1",
                                 secretValue: "value1",
-                                status: "Created",
-                                statusSchema: "Success"
+                                status: "Created"
                             },
                             {
                                 secretKey: "key2",
                                 secretValue: "value2",
-                                status: "Modified",
-                                statusSchema: "Warning"
+                                status: "Modified"
                             },
                             {
                                 secretKey: "key3",
                                 secretValue: "value3",
-                                status: "Deleted",
-                                statusSchema: "Error"
+                                status: "Deleted"
                             },
                             {
                                 secretKey: "key4",
                                 secretValue: null,
-                                status: "None",
-                                statusSchema: "None"
+                                status: "None"
                             }
                         ]
                     }
@@ -53,38 +49,39 @@ sap.ui.define([
         },
 
         onRepostiryTableEditRowPress: function (event) {
-            var columnListItem = event.getSource().getParent().getParent();
-            var itemModelPath = columnListItem.getBindingContext().getPath();
             var model = this.getView().getModel();
-            var rowData = model.getProperty(itemModelPath);
+            var columnListItem = event.getSource().getParent().getParent();
+            var repositoryModelPath = columnListItem.getBindingContext().getPath();
+            var repositoryItem = model.getProperty(repositoryModelPath);
 
-            model.setProperty(selectedItemPath, rowData);
+            model.setProperty(selectedItemPath, repositoryItem);
 
-            var originalItem = Object.assign({}, rowData);
+            var originalItem = Object.assign({}, repositoryItem);
+            originalItem.secrets = Object.assign([], repositoryItem.secrets);
             model.setProperty(originalItemPath, originalItem);
             
-            console.log("Edit pressed for:", rowData);
+            console.log("Edit pressed for:", repositoryItem);
 
             var dialog = this.byId(editDialogId);
             dialog.open();
         },
 
         onRepostiryTableDeleteRowPress: function (event) {
-            var columnListItem = event.getSource().getParent().getParent();
-            var itemModelPath = columnListItem.getBindingContext().getPath();
             var model = this.getView().getModel();
+            var columnListItem = event.getSource().getParent().getParent();
+            var repositoryModelPath = columnListItem.getBindingContext().getPath();
             // TODO: Use this to send request to the server
-            var rowData = model.getProperty(itemModelPath);
+            var repositoryItem = model.getProperty(repositoryModelPath);
 
             // Item is located at /repositories/<index>
-            var itemIndex = parseInt(itemModelPath.split("/")[2]);
+            var itemIndex = parseInt(repositoryModelPath.split("/")[2]);
 
             var repositories = model.getProperty(repositoriesPath);
-            repositories.splice(itemIndex);
+            repositories.splice(itemIndex, 1);
 
             model.setProperty(repositoriesPath, repositories);
 
-            console.log("Delete pressed for:", rowData);
+            console.log("Delete pressed for:", repositoryItem);
         },
 
         onEditDialogSavePress: function(event) {
@@ -102,11 +99,26 @@ sap.ui.define([
 
             // Revert changes back
             model.setProperty(selectedItemPath + "/url", originalItem.url);
+            model.setProperty(selectedItemPath + "/secrets", originalItem.secrets);
 
             // NOTE: This also works, in a real project, I will use the one with the better performance
             // var dialog = event.getSource().getParent().getParent();
             var dialog = this.byId(editDialogId);
             dialog.close();
+        },
+
+        onSecretDeleteRowPress: function(event) {
+            var model = this.getView().getModel();
+            var secretListItem = event.getSource().getParent().getParent();
+            var secretModelPath = secretListItem.getBindingContext().getPath();
+
+            // Item is located at /selectedItem/secrets/<index>
+            var secretIndex = parseInt(secretModelPath.split("/")[3]);
+
+            var selectedItemSecrets = model.getProperty(selectedItemPath + "/secrets");
+            selectedItemSecrets.splice(secretIndex, 1);
+
+            model.setProperty(selectedItemPath + "/secrets", selectedItemSecrets);
         }
 	});
 

@@ -65,7 +65,7 @@
                                     <Button 
                                         text="Delete"
                                         type="Reject"
-                                        press="onRepostiryTableDeleteRowPress">
+                                        press="onSecretDeleteRowPress">
                                     </Button>
                                 </HBox>
                             </CustomListItem>
