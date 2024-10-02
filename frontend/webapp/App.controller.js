@@ -16,7 +16,33 @@ sap.ui.define([
                 repositories: [
                     {
                         id: 1,
-                        url: "asd"
+                        url: "asd",
+                        secrets: [
+                            {
+                                secretKey: "key1",
+                                secretValue: "value1",
+                                status: "Created",
+                                statusSchema: "Success"
+                            },
+                            {
+                                secretKey: "key2",
+                                secretValue: "value2",
+                                status: "Modified",
+                                statusSchema: "Warning"
+                            },
+                            {
+                                secretKey: "key3",
+                                secretValue: "value3",
+                                status: "Deleted",
+                                statusSchema: "Error"
+                            },
+                            {
+                                secretKey: "key4",
+                                secretValue: null,
+                                status: "None",
+                                statusSchema: "None"
+                            }
+                        ]
                     }
                 ],
                 selectedItem: {},
@@ -62,7 +88,8 @@ sap.ui.define([
         },
 
         onEditDialogSavePress: function(event) {
-            var selectedItem = model.setProperty(selectedItemPath, rowData);
+            var model = this.getView().getModel();
+            var selectedItem = model.getProperty(selectedItemPath);
             // TODO: Use this to send request to server
 
             var dialog = this.byId(editDialogId);

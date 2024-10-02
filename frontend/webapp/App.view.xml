@@ -55,6 +55,17 @@
                     <VBox>
                         <Label text="Url" />
                         <Input id="urlInput" value="{/selectedItem/url}" />
+                        <List showSeparators="None" items="{/selectedItem/secrets}" >
+                            <CustomListItem>
+                                <HBox alignItems="Center" justifyContent="SpaceBetween">
+                                    <Title level="H3" text="{secretKey}" />
+                                    <ObjectStatus
+                                        class="sapUiTinyMargin"
+                                        text="{= ${secretValue} ? ${secretValue} : '********'}"
+                                        state= "{statusSchema}" />
+                                </HBox>
+                            </CustomListItem>
+                        </List>
                     </VBox>
                 </content>
                 <buttons>
