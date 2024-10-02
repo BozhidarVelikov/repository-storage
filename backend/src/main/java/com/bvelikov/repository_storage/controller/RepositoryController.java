@@ -4,6 +4,7 @@ import com.bvelikov.repository_storage.dto.RepositoryDTO;
 import com.bvelikov.repository_storage.exception.RepositoryNotFoundException;
 import com.bvelikov.repository_storage.model.Repository;
 import com.bvelikov.repository_storage.repository.RepositoryRepository;
+import com.bvelikov.repository_storage.repository.SecretRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -17,17 +18,16 @@ public class RepositoryController {
     @Autowired
     private RepositoryRepository repositoryRepository;
 
+    @Autowired
+    private SecretRepository secretRepository;
+
     @GetMapping("/list")
     public List<RepositoryDTO> getAllRepositories() {
         List<Repository> repositories = repositoryRepository.findAll();
 
         List<RepositoryDTO> dtos = new ArrayList<>();
         repositories.forEach(repository -> {
-            RepositoryDTO dto = new RepositoryDTO();
-            dto.setId(repository.getId());
-            dto.setUrl(repository.getUrl());
-
-            dtos.add(dto);
+            dtos.add(RepositoryDTO.toDTO(repository));
         });
 
         return dtos;
@@ -38,22 +38,17 @@ public class RepositoryController {
         Repository repository = repositoryRepository.findById(id)
                 .orElseThrow(() -> new RepositoryNotFoundException("Repository not found with id: " + id));
 
-        RepositoryDTO dto = new RepositoryDTO();
-        dto.setId(repository.getId());
-        dto.setUrl(repository.getUrl());
-
-        return dto;
+        return RepositoryDTO.toDTO(repository);
     }
 
     @PostMapping("/")
     public RepositoryDTO saveRepository(@RequestBody RepositoryDTO repositoryDTO) {
-        Repository repository = new Repository();
-        repository.setUrl(repositoryDTO.getUrl());
+        Repository repository = RepositoryDTO.fromDTO(repositoryDTO);
+        repository.setId(null);
 
-        Repository savedRepository = repositoryRepository.save(repository);
-        repositoryDTO.setId(savedRepository.getId());
+        repository = repositoryRepository.save(repository);
 
-        return repositoryDTO;
+        return RepositoryDTO.toDTO(repository);
     }
 
     @PutMapping("/{id}")
@@ -65,15 +60,15 @@ public class RepositoryController {
                 })
                 .orElseThrow(() -> new RepositoryNotFoundException("Repository not found with id: " + id));
 
-        RepositoryDTO dto = new RepositoryDTO();
-        dto.setId(repository.getId());
-        dto.setUrl(repository.getUrl());
-
-        return dto;
+        return RepositoryDTO.toDTO(repository);
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteRepository(@PathVariable Long id) {
+        secretRepository.findAllByRepository_Id(id).forEach(secret -> {
+            secretRepository.delete(secret);
+        });
+
         repositoryRepository.deleteById(id);
 
         return ResponseEntity.noContent().build();

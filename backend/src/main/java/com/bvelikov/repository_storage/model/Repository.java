@@ -32,4 +32,12 @@ public class Repository {
     public void setUrl(String url) {
         this.url = url;
     }
+
+    public Set<Secret> getSecrets() {
+        return secrets;
+    }
+
+    public void setSecrets(Set<Secret> secrets) {
+        this.secrets = secrets;
+    }
 }

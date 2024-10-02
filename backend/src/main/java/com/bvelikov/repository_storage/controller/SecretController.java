@@ -1,6 +1,7 @@
 package com.bvelikov.repository_storage.controller;
 
 import com.bvelikov.repository_storage.dto.SecretDTO;
+import com.bvelikov.repository_storage.exception.SecretNotFoundException;
 import com.bvelikov.repository_storage.model.Repository;
 import com.bvelikov.repository_storage.model.Secret;
 import com.bvelikov.repository_storage.repository.RepositoryRepository;
@@ -28,7 +29,12 @@ public class SecretController {
             return ResponseEntity.notFound().build();
         }
 
-        Secret secret = secretRepository.findByRepositoryAndSecretKey(repository.get(), secretDTO.getSecretKey());
+        Optional<Secret> potentialSecret = secretRepository.findByRepository_IdAndSecretKey(repositoryId, secretDTO.getSecretKey());
+        if (potentialSecret.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+
+        Secret secret = potentialSecret.get();
 
         String decryptedValue;
         try {
@@ -51,6 +57,11 @@ public class SecretController {
             return ResponseEntity.notFound().build();
         }
 
+        Optional<Secret> potentialSecret = secretRepository.findByRepository_IdAndSecretKey(repositoryId, secretDTO.getSecretKey());
+        if (potentialSecret.isPresent()) {
+            return ResponseEntity.badRequest().build();
+        }
+
         String encryptedValue;
         try {
             encryptedValue = EncryptionUtil.encrypt(secretDTO.getSecretValue());
@@ -58,8 +69,8 @@ public class SecretController {
             return ResponseEntity.internalServerError().build();
         }
 
-        Secret secret = new Secret();
-        secret.setSecretKey(secretDTO.getSecretKey());
+        Secret secret = SecretDTO.fromDTO(secretDTO);
+        secret.setId(null);
         secret.setSecretValue(encryptedValue);
         secret.setRepository(repository.get());
 
@@ -75,6 +86,11 @@ public class SecretController {
             return ResponseEntity.notFound().build();
         }
 
+        Optional<Secret> potentialSecret = secretRepository.findByRepository_IdAndSecretKey(repositoryId, secretDTO.getSecretKey());
+        if (potentialSecret.isEmpty()) {
+            return ResponseEntity.badRequest().build();
+        }
+
         String encryptedValue;
         try {
             encryptedValue = EncryptionUtil.encrypt(secretDTO.getSecretValue());
@@ -82,7 +98,7 @@ public class SecretController {
             return ResponseEntity.internalServerError().build();
         }
 
-        Secret secret = secretRepository.findByRepositoryAndSecretKey(repository.get(), secretDTO.getSecretKey());
+        Secret secret = potentialSecret.get();
         secret.setSecretValue(encryptedValue);
 
         secretRepository.save(secret);
@@ -97,8 +113,18 @@ public class SecretController {
             return ResponseEntity.notFound().build();
         }
 
-        Secret secret = secretRepository.findByRepositoryAndSecretKey(repository.get(), secretKey);
-        secretRepository.delete(secret);
+        Optional<Secret> potentialSecret = secretRepository.findByRepository_IdAndSecretKey(repositoryId, secretKey);
+        if (potentialSecret.isEmpty()) {
+            return ResponseEntity.badRequest().build();
+        }
+
+        secretRepository.findByRepository_IdAndSecretKey(repositoryId, secretKey)
+                .ifPresentOrElse(
+                        secret -> secretRepository.delete(secret),
+                        () -> {
+                            throw new SecretNotFoundException("Secret with key " + secretKey + " not found for repository with id " + repositoryId);
+                        }
+                );
 
         return ResponseEntity.noContent().build();
     }
