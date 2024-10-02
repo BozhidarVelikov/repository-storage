@@ -1,6 +1,19 @@
 {
     "_version": "1.58.0",
     "sap.app": {
-      "id": "ui5.quickstart"
-    }
+      "id": "ui5.repositorystorage"
+    },
+    "sap.ui5": {
+		"rootView": {
+			"viewName": "ui5.repositorystorage.App",
+			"type": "XML",
+			"async": true
+		},
+		"dependencies": {
+			"libs": {
+				"sap.f": {},
+				"sap.ui.core": {}
+			}
+		}
+	}
   }

@@ -1,0 +1,72 @@
+<mvc:View
+	controllerName="ui5.repositorystorage.App"
+	displayBlock="true"
+	xmlns="sap.m"
+	xmlns:mvc="sap.ui.core.mvc">
+	<App>
+		<Page title="Repositories">
+			<Table
+                id="repostiryTable"
+                items="{
+                    path: '/repositories'
+                }" >
+                <columns>
+                    <Column
+                        width="8rem">
+                        <Text text="Id" />
+                    </Column>
+                    <Column>
+                        <Text text="Repository" />
+                    </Column>
+                    <Column
+                        width="12rem"
+                        demandPopin="true">
+                        <Text text="Actions" />
+                    </Column>
+                </columns>
+
+                <items>
+                    <ColumnListItem>
+                        <cells>
+                            <Text
+                                text="{id}" />
+                            <Text
+                                text="{url}" />
+                            <HBox>
+                                <items>
+                                    <Button 
+                                        text="Edit"
+                                        press="onRepostiryTableEditRowPress">
+                                    </Button>
+                                    <Button 
+                                        text="Delete"
+                                        type="Reject"
+                                        press="onRepostiryTableDeleteRowPress">
+                                    </Button>
+                                </items>
+                            </HBox>
+                        </cells>
+                    </ColumnListItem>
+                </items>
+            </Table>
+
+            <Dialog id="editDialog" title="Edit Repository">
+                <content>
+                    <VBox>
+                        <Label text="Url" />
+                        <Input id="urlInput" value="{/selectedItem/url}" />
+                    </VBox>
+                </content>
+                <buttons>
+                    <Button 
+                        text="Save"
+                        press="onEditDialogSavePress" />
+                    <Button
+                        text="Cancel"
+                        type="Reject"
+                        press="onEditDialogCancelPress" />
+                </buttons>
+            </Dialog>
+		</Page>
+	</App>
+</mvc:View>
