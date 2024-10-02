@@ -59,10 +59,14 @@
                             <CustomListItem>
                                 <HBox alignItems="Center" justifyContent="SpaceBetween">
                                     <Title level="H3" text="{secretKey}" />
-                                    <ObjectStatus
+                                    <Input
                                         class="sapUiTinyMargin"
-                                        text="{= ${secretValue} ? ${secretValue} : '********'}"
-                                        state= "{statusSchema}" />
+                                        value="{= ${secretValue} ? ${secretValue} : '********'}" />
+                                    <Button 
+                                        text="Delete"
+                                        type="Reject"
+                                        press="onRepostiryTableDeleteRowPress">
+                                    </Button>
                                 </HBox>
                             </CustomListItem>
                         </List>
