@@ -4,6 +4,12 @@ sap.ui.define([
 ], (Controller, JSONModel) => {
 	"use strict";
 
+    const repositoriesPath = "/repositories";
+    const selectedItemPath = "/selectedItem";
+    const originalItemPath = "/originalItem";
+
+    const editDialogId = "editDialog"
+
 	return Controller.extend("ui5.repositorystorage.App", {
 		onInit: function() {
             var model = new JSONModel({
@@ -13,31 +19,31 @@ sap.ui.define([
                         url: "asd"
                     }
                 ],
-                selectedItem: {}
+                selectedItem: {},
+                originalItem: {}
             });
 
             this.getView().setModel(model);
         },
 
         onRepostiryTableEditRowPress: function (event) {
-            const selectedItemPath = "/selectedItem"
-
             var columnListItem = event.getSource().getParent().getParent();
             var itemModelPath = columnListItem.getBindingContext().getPath();
             var model = this.getView().getModel();
             var rowData = model.getProperty(itemModelPath);
 
-            model.setProperty(selectedItemPath, rowData)
+            model.setProperty(selectedItemPath, rowData);
+
+            var originalItem = Object.assign({}, rowData);
+            model.setProperty(originalItemPath, originalItem);
             
             console.log("Edit pressed for:", rowData);
 
-            var dialog = this.byId("editDialog");
+            var dialog = this.byId(editDialogId);
             dialog.open();
         },
 
         onRepostiryTableDeleteRowPress: function (event) {
-            const repositoriesPath = "/repositories"
-
             var columnListItem = event.getSource().getParent().getParent();
             var itemModelPath = columnListItem.getBindingContext().getPath();
             var model = this.getView().getModel();
@@ -56,12 +62,23 @@ sap.ui.define([
         },
 
         onEditDialogSavePress: function(event) {
-            var dialog = this.byId("editDialog");
+            var selectedItem = model.setProperty(selectedItemPath, rowData);
+            // TODO: Use this to send request to server
+
+            var dialog = this.byId(editDialogId);
             dialog.close();
         },
 
         onEditDialogCancelPress: function(event) {
-            var dialog = this.byId("editDialog");
+            var model = this.getView().getModel();
+            var originalItem = model.getProperty(originalItemPath);
+
+            // Revert changes back
+            model.setProperty(selectedItemPath + "/url", originalItem.url);
+
+            // NOTE: This also works, in a real project, I will use the one with the better performance
+            // var dialog = event.getSource().getParent().getParent();
+            var dialog = this.byId(editDialogId);
             dialog.close();
         }
 	});
