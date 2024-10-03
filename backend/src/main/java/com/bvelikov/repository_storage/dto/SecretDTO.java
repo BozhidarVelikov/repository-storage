@@ -6,6 +6,7 @@ public class SecretDTO {
     private Long id;
     private String secretKey;
     private String secretValue;
+    private Long repositoryId;
 
     public Long getId() {
         return id;
@@ -31,6 +32,14 @@ public class SecretDTO {
         this.secretValue = secretValue;
     }
 
+    public Long getRepositoryId() {
+        return repositoryId;
+    }
+
+    public void setRepositoryId(Long repositoryId) {
+        this.repositoryId = repositoryId;
+    }
+
     public static Secret fromDTO(SecretDTO secretDTO) {
         Secret secret = new Secret();
         secret.setId(secretDTO.getId());
@@ -44,7 +53,8 @@ public class SecretDTO {
         SecretDTO secretDTO = new SecretDTO();
         secretDTO.setId(secret.getId());
         secretDTO.setSecretKey(secret.getSecretKey());
-        secretDTO.setSecretValue(secret.getSecretValue());
+        secretDTO.setSecretValue(null);
+        secretDTO.setRepositoryId(secret.getRepository().getId());
 
         return secretDTO;
     }

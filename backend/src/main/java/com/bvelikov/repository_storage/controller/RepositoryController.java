@@ -41,7 +41,7 @@ public class RepositoryController {
         return RepositoryDTO.toDTO(repository);
     }
 
-    @PostMapping("/")
+    @PostMapping("")
     public RepositoryDTO saveRepository(@RequestBody RepositoryDTO repositoryDTO) {
         Repository repository = RepositoryDTO.fromDTO(repositoryDTO);
         repository.setId(null);

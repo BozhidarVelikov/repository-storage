@@ -1,7 +1,6 @@
 package com.bvelikov.repository_storage.controller;
 
 import com.bvelikov.repository_storage.dto.SecretDTO;
-import com.bvelikov.repository_storage.exception.SecretNotFoundException;
 import com.bvelikov.repository_storage.model.Repository;
 import com.bvelikov.repository_storage.model.Secret;
 import com.bvelikov.repository_storage.repository.RepositoryRepository;
@@ -50,14 +49,14 @@ public class SecretController {
         return ResponseEntity.badRequest().build();
     }
 
-    @PostMapping("/")
-    public ResponseEntity<Void> saveSecret(@RequestParam Long repositoryId, @RequestBody SecretDTO secretDTO) {
-        Optional<Repository> repository = repositoryRepository.findById(repositoryId);
+    @PostMapping("")
+    public ResponseEntity<SecretDTO> saveSecret(@RequestBody SecretDTO secretDTO) {
+        Optional<Repository> repository = repositoryRepository.findById(secretDTO.getRepositoryId());
         if (repository.isEmpty()) {
             return ResponseEntity.notFound().build();
         }
 
-        Optional<Secret> potentialSecret = secretRepository.findByRepository_IdAndSecretKey(repositoryId, secretDTO.getSecretKey());
+        Optional<Secret> potentialSecret = secretRepository.findByRepository_IdAndSecretKey(secretDTO.getRepositoryId(), secretDTO.getSecretKey());
         if (potentialSecret.isPresent()) {
             return ResponseEntity.badRequest().build();
         }
@@ -76,17 +75,20 @@ public class SecretController {
 
         secretRepository.save(secret);
 
-        return ResponseEntity.noContent().build();
+        SecretDTO responseSecretDTO = SecretDTO.toDTO(secret);
+        responseSecretDTO.setSecretValue(null);
+
+        return ResponseEntity.ok(responseSecretDTO);
     }
 
-    @PutMapping("/")
-    public ResponseEntity<Void> updateSecret(@RequestParam Long repositoryId, @RequestBody SecretDTO secretDTO) {
-        Optional<Repository> repository = repositoryRepository.findById(repositoryId);
+    @PutMapping("/{id}")
+    public ResponseEntity<SecretDTO> updateSecret(@PathVariable Long id,  @RequestBody SecretDTO secretDTO) {
+        Optional<Repository> repository = repositoryRepository.findById(secretDTO.getRepositoryId());
         if (repository.isEmpty()) {
             return ResponseEntity.notFound().build();
         }
 
-        Optional<Secret> potentialSecret = secretRepository.findByRepository_IdAndSecretKey(repositoryId, secretDTO.getSecretKey());
+        Optional<Secret> potentialSecret = secretRepository.findById(id);
         if (potentialSecret.isEmpty()) {
             return ResponseEntity.badRequest().build();
         }
@@ -103,28 +105,20 @@ public class SecretController {
 
         secretRepository.save(secret);
 
-        return ResponseEntity.noContent().build();
+        SecretDTO responseSecretDTO = SecretDTO.toDTO(secret);
+        responseSecretDTO.setSecretValue(null);
+
+        return ResponseEntity.ok(responseSecretDTO);
     }
 
-    @DeleteMapping("/")
-    public ResponseEntity<Void> deleteSecret(@RequestParam Long repositoryId, @RequestParam String secretKey) {
-        Optional<Repository> repository = repositoryRepository.findById(repositoryId);
-        if (repository.isEmpty()) {
-            return ResponseEntity.notFound().build();
-        }
-
-        Optional<Secret> potentialSecret = secretRepository.findByRepository_IdAndSecretKey(repositoryId, secretKey);
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteSecret(@PathVariable Long id) {
+        Optional<Secret> potentialSecret = secretRepository.findById(id);
         if (potentialSecret.isEmpty()) {
             return ResponseEntity.badRequest().build();
         }
 
-        secretRepository.findByRepository_IdAndSecretKey(repositoryId, secretKey)
-                .ifPresentOrElse(
-                        secret -> secretRepository.delete(secret),
-                        () -> {
-                            throw new SecretNotFoundException("Secret with key " + secretKey + " not found for repository with id " + repositoryId);
-                        }
-                );
+        secretRepository.delete(potentialSecret.get());
 
         return ResponseEntity.noContent().build();
     }
