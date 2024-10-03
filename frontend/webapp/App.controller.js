@@ -1,48 +1,54 @@
 sap.ui.define([
 	"sap/ui/core/mvc/Controller",
-	"sap/ui/model/json/JSONModel"
-], (Controller, JSONModel) => {
+	"sap/ui/model/json/JSONModel",
+    "sap/m/MessageBox",
+    "sap/m/MessageToast"
+], (Controller, JSONModel, MessageBox, MessageToast) => {
 	"use strict";
 
     const repositoriesPath = "/repositories";
     const selectedItemPath = "/selectedItem";
     const originalItemPath = "/originalItem";
 
-    const editDialogId = "editDialog"
+    const editDialogId = "editDialog";
+
+    // Urls used for fetching data
+    const rootUrl = "http://127.0.0.1:8080"; // I couldn't figure out how to use an environment variable
+    
+    const repositoryEndpoint = rootUrl + "/api/repository";
+    const repositoryEndpointList = repositoryEndpoint + "/list";
+    const repositoryEndpointGetById = repositoryEndpoint + "/{id}";
+    const repositoryEndpointSave = repositoryEndpoint;
+    const repositoryEndpointUpdate = repositoryEndpoint;
+    const repositoryEndpointDelete = repositoryEndpoint + "/{id}";
+
+    const secretEndpoint = rootUrl + "/api/secret";
+    const secretEndpointVerify = secretEndpoint + "/verify";
+    const secretEndpointSave = secretEndpoint;
+    const secretEndpointUpdate = secretEndpoint;
+    const secretEndpointDelete = secretEndpoint;
 
 	return Controller.extend("ui5.repositorystorage.App", {
 		onInit: function() {
             var model = new JSONModel({
-                repositories: [
-                    {
-                        id: 1,
-                        url: "asd",
-                        secrets: [
-                            {
-                                secretKey: "key1",
-                                secretValue: "value1",
-                                status: "Created"
-                            },
-                            {
-                                secretKey: "key2",
-                                secretValue: "value2",
-                                status: "Modified"
-                            },
-                            {
-                                secretKey: "key3",
-                                secretValue: "value3",
-                                status: "Deleted"
-                            },
-                            {
-                                secretKey: "key4",
-                                secretValue: null,
-                                status: "None"
-                            }
-                        ]
-                    }
-                ],
+                repositories: [],
                 selectedItem: {},
                 originalItem: {}
+            });
+
+            // Load repository data from endpoint
+            fetch(repositoryEndpointList)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Error fetching data');
+                }
+                return response.json();
+            })
+            .then(data => {
+                model.setProperty(repositoriesPath, data);
+            })
+            .catch(_ => {
+                MessageBox.error("Failed to fetch repositories!");
             });
 
             this.getView().setModel(model);
@@ -56,12 +62,15 @@ sap.ui.define([
 
             model.setProperty(selectedItemPath, repositoryItem);
 
+            // Copy the original repository and each secret in it
             var originalItem = Object.assign({}, repositoryItem);
-            originalItem.secrets = Object.assign([], repositoryItem.secrets);
+            var secrets = [];
+            repositoryItem.secrets.forEach((secret) => {
+                secrets.push(Object.assign({}, secret));
+            });
+            originalItem.secrets = secrets;
             model.setProperty(originalItemPath, originalItem);
             
-            console.log("Edit pressed for:", repositoryItem);
-
             var dialog = this.byId(editDialogId);
             dialog.open();
         },
@@ -73,21 +82,36 @@ sap.ui.define([
             // TODO: Use this to send request to the server
             var repositoryItem = model.getProperty(repositoryModelPath);
 
-            // Item is located at /repositories/<index>
-            var itemIndex = parseInt(repositoryModelPath.split("/")[2]);
+            fetch(repositoryEndpointDelete.replace("{id}", repositoryItem.id), {
+                method: 'DELETE'
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Error deleteing data');
+                }
 
-            var repositories = model.getProperty(repositoriesPath);
-            repositories.splice(itemIndex, 1);
+                // Repository is located at /repositories/<index>
+                var itemIndex = parseInt(repositoryModelPath.split("/")[2]);
 
-            model.setProperty(repositoriesPath, repositories);
+                // Remove repository from model
+                var repositories = model.getProperty(repositoriesPath);
+                repositories.splice(itemIndex, 1);
 
-            console.log("Delete pressed for:", repositoryItem);
+                model.setProperty(repositoriesPath, repositories);
+
+                MessageToast.show("Repository deleted successfully!");
+            })
+            .catch(_ => {
+                MessageBox.error("Failed to delete repository!");
+            });
         },
 
         onEditDialogSavePress: function(event) {
             var model = this.getView().getModel();
-            var selectedItem = model.getProperty(selectedItemPath);
             // TODO: Use this to send request to server
+            var selectedItem = model.getProperty(selectedItemPath);
+
+            // console.log(selectedItem);
 
             var dialog = this.byId(editDialogId);
             dialog.close();
@@ -105,6 +129,15 @@ sap.ui.define([
             // var dialog = event.getSource().getParent().getParent();
             var dialog = this.byId(editDialogId);
             dialog.close();
+        },
+
+        onSecretInputChange: function(event) {
+            var input = event.getSource();
+            var inputContext = input.getBindingContext();
+
+            // Retrieve the secret item associated with the input
+            var secret = inputContext.getObject();
+            secret.secretValue = event.getParameter("value");
         },
 
         onSecretDeleteRowPress: function(event) {

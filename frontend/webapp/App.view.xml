@@ -61,7 +61,8 @@
                                     <Title level="H3" text="{secretKey}" />
                                     <Input
                                         class="sapUiTinyMargin"
-                                        value="{= ${secretValue} ? ${secretValue} : '********'}" />
+                                        value="{= ${secretValue} ? ${secretValue} : '********'}"
+                                        change="onSecretInputChange" />
                                     <Button 
                                         text="Delete"
                                         type="Reject"
