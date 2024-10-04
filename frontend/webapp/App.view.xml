@@ -16,7 +16,7 @@
                         <ToolbarSpacer />
                         <Button 
                             text="Add Repository" 
-                            press="onAddRepository" />
+                            press="onRepositoryAddButtonPress" />
                     </Toolbar>
                 </headerToolbar>
 
@@ -72,17 +72,30 @@
                                     <ToolbarSpacer />
                                     <Button 
                                         text="Add Secret" 
-                                        press="onAddSecret" />
+                                        press="onSecretAddButtonPress" />
                                 </Toolbar>
                             </headerToolbar>
 
-                            <CustomListItem>
+                            <CustomListItem
+                                visible="{= ${status} !== 'Deleted' }" >
                                 <HBox alignItems="Center" justifyContent="SpaceBetween">
-                                    <Title level="H3" text="{secretKey}" />
+                                    <VBox>
+                                        <Input 
+                                            value="{secretKey}" 
+                                            visible="{= ${isNew} === true }"
+                                            placeholder="Enter secret key"
+                                            change="onSecretKeyInputChange" />
+
+                                        <Title 
+                                            level="H3"
+                                            text="{secretKey}"
+                                            visible="{= ${isNew} === false }" />
+                                    </VBox>
                                     <Input
                                         class="sapUiTinyMargin"
-                                        value="{= ${secretValue} ? ${secretValue} : '********'}"
-                                        change="onSecretInputChange" />
+                                        value="{secretValue}"
+                                        change="onSecretValueInputChange"
+                                        placeholder="********" />
                                     <Button 
                                         text="Delete"
                                         type="Reject"
