@@ -4,12 +4,22 @@
 	xmlns="sap.m"
 	xmlns:mvc="sap.ui.core.mvc">
 	<App>
-		<Page title="Repositories">
+		<Page title="Repositories Page">
 			<Table
                 id="repostiryTable"
                 items="{
                     path: '/repositories'
                 }" >
+                <headerToolbar>
+                    <Toolbar>
+                        <Title text="Repositories" />
+                        <ToolbarSpacer />
+                        <Button 
+                            text="Add Repository" 
+                            press="onAddRepository" />  <!-- This will trigger the function to add a repository -->
+                    </Toolbar>
+                </headerToolbar>
+
                 <columns>
                     <Column
                         width="8rem">

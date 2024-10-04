@@ -19,14 +19,14 @@ sap.ui.define([
     const repositoryEndpointList = repositoryEndpoint + "/list";
     const repositoryEndpointGetById = repositoryEndpoint + "/{id}";
     const repositoryEndpointSave = repositoryEndpoint;
-    const repositoryEndpointUpdate = repositoryEndpoint;
+    const repositoryEndpointUpdate = repositoryEndpoint + "/{id}";
     const repositoryEndpointDelete = repositoryEndpoint + "/{id}";
 
     const secretEndpoint = rootUrl + "/api/secret";
     const secretEndpointVerify = secretEndpoint + "/verify";
     const secretEndpointSave = secretEndpoint;
-    const secretEndpointUpdate = secretEndpoint;
-    const secretEndpointDelete = secretEndpoint;
+    const secretEndpointUpdate = secretEndpoint + "/{id}";
+    const secretEndpointDelete = secretEndpoint + "/{id}";
 
 	return Controller.extend("ui5.repositorystorage.App", {
 		onInit: function() {
@@ -79,7 +79,6 @@ sap.ui.define([
             var model = this.getView().getModel();
             var columnListItem = event.getSource().getParent().getParent();
             var repositoryModelPath = columnListItem.getBindingContext().getPath();
-            // TODO: Use this to send request to the server
             var repositoryItem = model.getProperty(repositoryModelPath);
 
             fetch(repositoryEndpointDelete.replace("{id}", repositoryItem.id), {
@@ -108,10 +107,156 @@ sap.ui.define([
 
         onEditDialogSavePress: function(event) {
             var model = this.getView().getModel();
-            // TODO: Use this to send request to server
-            var selectedItem = model.getProperty(selectedItemPath);
+            var originalRepository = model.getProperty(originalItemPath);
+            var repository = model.getProperty(selectedItemPath);
 
-            // console.log(selectedItem);
+            var success = true;
+
+            // Delete secrets
+            originalRepository.secrets.forEach(secret => {
+                var isDeletedSecret = !repository.secrets.some(s => {
+                    return s.secretKey === secret.secretKey
+                });
+
+                if (isDeletedSecret) {
+                    fetch(secretEndpointDelete.replace("{id}", secret.id), {
+                        method: 'DELETE'
+                    })
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error('Error deleteing data');
+                        }
+        
+                        console.log("Secret " + secret.secretKey + " deleted successfully!");
+                        MessageToast.show("Secret deleted successfully!");
+                    })
+                    .catch(_ => {
+                        MessageBox.error("Failed to delete secret" + secret.secretKey + "!");
+
+                        success = false;
+                    });
+                }
+            });
+
+            // Create and update secrets
+            repository.secrets.forEach(secret => {
+                if (secret.secretValue !== null) {
+                    var isNewSecret = !originalRepository.secrets.some(s => {
+                        return s.secretKey === secret.secretKey
+                    });
+
+                    if (!isNewSecret) {
+                        // Update secret
+                        fetch(secretEndpointUpdate.replace("{id}", secret.id), {
+                            method: 'PUT',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify(secret)
+                        })
+                        .then(response => {
+                            if (!response.ok) {
+                                throw new Error('Error updating data');
+                            }
+
+                            return response.json();
+                        })
+                        .then(data => {
+                            secret = data;
+                            secret.secretValue = null;
+                
+                            MessageToast.show("Secret updated successfully!");
+                        })
+                        .catch(_ => {
+                            MessageBox.error("Failed to update secret " + secret.secretKey + "!");
+
+                            success = false;
+                        });
+                    } else {
+                        fetch(secretEndpointSave, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify(secret)
+                        })
+                        .then(response => {
+                            if (!response.ok) {
+                                throw new Error('Error creating data');
+                            }
+
+                            return response.json();
+                        })
+                        .then(data => {
+                            secret = data;
+                            secret.secretValue = null;
+                
+                            MessageToast.show("Secret created successfully!");
+                        })
+                        .catch(_ => {
+                            MessageBox.error("Failed to create secret " + secret.secretKey + "!");
+
+                            success = false;
+                        });
+                    }
+                }
+            });
+
+            // Update repository
+            if (repository.url !== originalRepository.url) {
+                fetch(repositoryEndpointUpdate.replace("{id}", repository.id), {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(repository)
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Error updating data');
+                    }
+
+                    return response.json();
+                })
+                .then(data => {
+                    repository = data;
+        
+                    MessageToast.show("Repository updated successfully!");
+                })
+                .catch(_ => {
+                    MessageBox.error("Failed to update secret " + secret.secretKey + "!");
+                    fetch(repositoryEndpointDelete.replace("{id}", repositoryItem.id), {
+                        method: 'DELETE'
+                    })
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error('Error deleteing data');
+                        }
+        
+                        // Repository is located at /repositories/<index>
+                        var itemIndex = parseInt(repositoryModelPath.split("/")[2]);
+        
+                        // Remove repository from model
+                        var repositories = model.getProperty(repositoriesPath);
+                        repositories.splice(itemIndex, 1);
+        
+                        model.setProperty(repositoriesPath, repositories);
+        
+                        MessageToast.show("Repository deleted successfully!");
+                    })
+                    .catch(_ => {
+                        MessageBox.error("Failed to delete repository!");
+
+                        success = false;
+                    });
+                });
+            }
+
+            if (success) {
+                MessageBox.success("Repository updated successfully!");
+            } else {
+                MessageBox.error("Failed to update repository!");
+            }
 
             var dialog = this.byId(editDialogId);
             dialog.close();
