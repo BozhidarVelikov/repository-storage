@@ -16,7 +16,7 @@
                         <ToolbarSpacer />
                         <Button 
                             text="Add Repository" 
-                            press="onAddRepository" />  <!-- This will trigger the function to add a repository -->
+                            press="onAddRepository" />
                     </Toolbar>
                 </headerToolbar>
 
@@ -66,6 +66,16 @@
                         <Label text="Url" />
                         <Input id="urlInput" value="{/selectedItem/url}" />
                         <List showSeparators="None" items="{/selectedItem/secrets}" >
+                            <headerToolbar>
+                                <Toolbar>
+                                    <Title text="Secrets" />
+                                    <ToolbarSpacer />
+                                    <Button 
+                                        text="Add Secret" 
+                                        press="onAddSecret" />
+                                </Toolbar>
+                            </headerToolbar>
+
                             <CustomListItem>
                                 <HBox alignItems="Center" justifyContent="SpaceBetween">
                                     <Title level="H3" text="{secretKey}" />
