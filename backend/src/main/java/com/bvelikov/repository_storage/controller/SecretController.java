@@ -22,13 +22,13 @@ public class SecretController {
     private RepositoryRepository repositoryRepository;
 
     @PostMapping("/verify")
-    public ResponseEntity<Void> verifySecret(@RequestParam Long repositoryId, @RequestBody SecretDTO secretDTO) {
-        Optional<Repository> repository = repositoryRepository.findById(repositoryId);
+    public ResponseEntity<Void> verifySecret(@RequestBody SecretDTO secretDTO) {
+        Optional<Repository> repository = repositoryRepository.findById(secretDTO.getRepositoryId());
         if (repository.isEmpty()) {
             return ResponseEntity.notFound().build();
         }
 
-        Optional<Secret> potentialSecret = secretRepository.findByRepository_IdAndSecretKey(repositoryId, secretDTO.getSecretKey());
+        Optional<Secret> potentialSecret = secretRepository.findByRepository_IdAndSecretKey(secretDTO.getRepositoryId(), secretDTO.getSecretKey());
         if (potentialSecret.isEmpty()) {
             return ResponseEntity.notFound().build();
         }

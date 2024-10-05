@@ -2,18 +2,21 @@
 	controllerName="ui5.repositorystorage.App"
 	displayBlock="true"
 	xmlns="sap.m"
+    xmlns:core="sap.ui.core"
 	xmlns:mvc="sap.ui.core.mvc">
 	<App>
 		<Page title="Repositories Page">
 			<Table
                 id="repostiryTable"
-                items="{
-                    path: '/repositories'
-                }" >
+                items="{/repositories}" >
                 <headerToolbar>
                     <Toolbar>
                         <Title text="Repositories" />
                         <ToolbarSpacer />
+                        <Button 
+                            text="Verify Secret"
+                            visible="{= ${/repositories}.length > 0}"
+                            press="onVerifySecretButtonPress" />
                         <Button 
                             text="Add Repository" 
                             press="onRepositoryAddButtonPress" />
@@ -59,6 +62,38 @@
                     </ColumnListItem>
                 </items>
             </Table>
+
+            <Dialog id="verifyDialog" title="Verify Secrets">
+                <content>
+                    <VBox>
+                        <Label text="Url" />
+                        <Select
+                            id="verifyDialogRepositoryComboBox"
+                            selectedKey="{/selectedRepositoryId}"
+                            change="onRepositoryChange"
+                            items="{/repositories}">
+                            <core:Item key="{id}" text="{url}" />
+                        </Select>
+                        <Label text="Key" />
+                        <Select
+                            id="verifyDialogSecretKeyComboBox"
+                            selectedKey="{/selectedKeyId}"
+                            items="{/selectedItem/secrets}">
+                            <core:Item key="{id}" text="{secretKey}" />
+                        </Select>
+                        <Input id="verifyDialogSecretValueInput" />
+                    </VBox>
+                </content>
+                <buttons>
+                    <Button 
+                        text="Verify"
+                        press="onVerifySecretDialogVerifyPress" />
+                    <Button
+                        text="Cancel"
+                        type="Reject"
+                        press="onVerifySecretDialogCancelPress" />
+                </buttons>
+            </Dialog>
 
             <Dialog id="editDialog" title="Edit Repository">
                 <content>

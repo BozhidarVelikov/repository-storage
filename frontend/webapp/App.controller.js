@@ -10,8 +10,12 @@ sap.ui.define([
     const repositoriesPath = "/repositories";
     const selectedItemPath = "/selectedItem";
     const originalItemPath = "/originalItem";
+    const selectedRepositoryIdPath = "/selectedRepositoryId";
+    const selectedKeyIdPath = "/selectedKeyId";
 
     const editDialogId = "editDialog";
+    const verifyDialogId = "verifyDialog";
+    const verifyDialogSecretValueInputId = "verifyDialogSecretValueInput";
 
     // Urls used for fetching data
     const rootUrl = "http://127.0.0.1:8080"; // I couldn't figure out how to use an environment variable
@@ -39,6 +43,8 @@ sap.ui.define([
                 repositories: [],
                 selectedItem: {},
                 originalItem: {},
+                selectedRepositoryId: null,
+                selectedKeyId: null
             });
 
             // Load repository data from endpoint
@@ -52,12 +58,108 @@ sap.ui.define([
                     repository.isNew = false;
                 });
                 model.setProperty(repositoriesPath, data);
+
+                this.resetSelectedIds(model, data);
             })
-            .catch(_ => {
+            .catch(error => {
+                console.log(error);
                 MessageBox.error("Failed to fetch repositories!");
             });
 
             this.getView().setModel(model);
+        },
+
+        resetSelectedIds: function(model, repositories) {
+            if (repositories.length > 0) {
+                model.setProperty(selectedRepositoryIdPath, repositories[0].id);
+
+                if (repositories[0].secrets.length > 0) {
+                    model.setProperty(selectedKeyIdPath, repositories[0].secrets[0].id);
+                } else {
+                    model.setProperty(selectedKeyIdPath, null);
+                }
+            } else {
+                model.setProperty(selectedRepositoryIdPath, null);
+                model.setProperty(selectedKeyIdPath, null);
+            }
+        },
+
+        onVerifySecretButtonPress: function() {
+            var model = this.getView().getModel();
+            var repositories = model.getProperty(repositoriesPath);
+            this.resetSelectedIds(model, repositories);
+
+            var selectedItem;
+            if (repositories.length > 0) {
+                selectedItem = repositories[0];
+            } else {
+                selectedItem = null;
+            }
+
+            model.setProperty(selectedItemPath, selectedItem);
+
+            var dialog = this.byId(verifyDialogId);
+            dialog.open();
+        },
+
+        onRepositoryChange: function(event) {
+            var model = this.getView().getModel();
+            var repositories = model.getProperty(repositoriesPath);
+            var selectedKey = event.getParameter("selectedItem").getKey();
+            
+            if (repositories.length > 0) {
+                for (var i = 0; i < repositories.length; i++) {
+                    if (repositories[i].id == selectedKey) {
+                        model.setProperty(selectedItemPath, repositories[i]);
+
+                        if (repositories[i].secrets.length > 0) {
+                            model.setProperty(selectedKeyIdPath, repositories[i].secrets[0].id);
+                        } else {
+                            model.setProperty(selectedKeyIdPath, null);
+                        }
+
+                        break;
+                    }
+                }
+            } else {
+                model.setProperty(selectedKeyIdPath, null);
+            }
+        },
+
+        onVerifySecretDialogVerifyPress: function() {
+            var model = this.getView().getModel();
+            var selectedItem = model.getProperty(selectedItemPath);
+            var selectedKeyId = model.getProperty(selectedKeyIdPath);
+            var enteredSecretValue = this.byId(verifyDialogSecretValueInputId).getValue();
+
+            for (var i = 0; i < selectedItem.secrets.length; i++) {
+                if (selectedItem.secrets[i].id == selectedKeyId) {
+                    var selectedSecretCopy = Object.assign(selectedItem.secrets[i]);
+                    selectedSecretCopy.secretValue = enteredSecretValue;
+
+                    fetch(secretEndpointVerify, {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json",
+                        },
+                        body: JSON.stringify(selectedSecretCopy)
+                    })
+                    .then(response => {
+                        if (response.ok) {
+                            MessageBox.success("Secret is correct");
+                        } else {
+                            MessageBox.error("Secret is wrong");
+                        }
+                    });
+
+                    break;
+                }
+            }
+        },
+
+        onVerifySecretDialogCancelPress: function (event) {
+            var dialog = this.byId(verifyDialogId);
+            dialog.close();
         },
 
         onRepositoryAddButtonPress: function () {
