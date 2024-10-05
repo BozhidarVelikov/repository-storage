@@ -7,6 +7,7 @@ sap.ui.define([
 ], (Controller, JSONModel, MessageBox, MessageToast, HttpUtils) => {
     "use strict";
 
+    // Model paths
     const repositoriesPath = "/repositories";
     const selectedItemPath = "/selectedItem";
     const originalItemPath = "/originalItem";
@@ -32,6 +33,7 @@ sap.ui.define([
     const secretEndpointUpdate = secretEndpoint + "/{id}";
     const secretEndpointDelete = secretEndpoint + "/{id}";
 
+    // Secret statuses
     const statusNone = "None";
     const statusCreated = "Created";
     const statusModified = "Modified";
@@ -98,6 +100,9 @@ sap.ui.define([
 
             model.setProperty(selectedItemPath, selectedItem);
 
+            var secretValueInput = this.byId(verifyDialogSecretValueInputId);
+            secretValueInput.setValue("");
+
             var dialog = this.byId(verifyDialogId);
             dialog.open();
         },
@@ -128,13 +133,23 @@ sap.ui.define([
 
         onVerifySecretDialogVerifyPress: function() {
             var model = this.getView().getModel();
-            var selectedItem = model.getProperty(selectedItemPath);
+            var selectedRepository = model.getProperty(selectedItemPath);
             var selectedKeyId = model.getProperty(selectedKeyIdPath);
             var enteredSecretValue = this.byId(verifyDialogSecretValueInputId).getValue();
 
-            for (var i = 0; i < selectedItem.secrets.length; i++) {
-                if (selectedItem.secrets[i].id == selectedKeyId) {
-                    var selectedSecretCopy = Object.assign(selectedItem.secrets[i]);
+            if (selectedRepository === null) {
+                MessageBox.error("Please choose a repository!");
+                return;
+            }
+
+            if (selectedKeyId === null) {
+                MessageBox.error("Please choose a secret!");
+                return;
+            }
+
+            for (var i = 0; i < selectedRepository.secrets.length; i++) {
+                if (selectedRepository.secrets[i].id == selectedKeyId) {
+                    var selectedSecretCopy = Object.assign(selectedRepository.secrets[i]);
                     selectedSecretCopy.secretValue = enteredSecretValue;
 
                     fetch(secretEndpointVerify, {
@@ -146,10 +161,14 @@ sap.ui.define([
                     })
                     .then(response => {
                         if (response.ok) {
-                            MessageBox.success("Secret is correct");
+                            MessageBox.success("Secret value is correct!");
                         } else {
-                            MessageBox.error("Secret is wrong");
+                            MessageBox.error("Secret value is wrong!");
                         }
+                    })
+                    .catch(error => {
+                        console.log(error);
+                        MessageBox.show("An error occurred while verifying secret!");
                     });
 
                     break;
@@ -223,42 +242,150 @@ sap.ui.define([
             });
         },
 
-        onEditDialogSavePress: async function (event) {
-            var model = this.getView().getModel();
-            var originalRepository = model.getProperty(originalItemPath);
-            var repository = model.getProperty(selectedItemPath);
+        validateRepository: function(repository, model) {
+            // Verify repository url
+            var numberOfRepositoriesWithEditedUrl = 0;
+            var repositories = model.getProperty(repositoriesPath);
+            repositories.forEach(repo => {
+                if (repo.url === repository.url) {
+                    numberOfRepositoriesWithEditedUrl++;
+                }
+            });
 
+            if (numberOfRepositoriesWithEditedUrl > 1 || (repository.isNew && numberOfRepositoriesWithEditedUrl === 1)) {
+                MessageBox.error("A repository with this url already exists!");
+                return false;
+            }
+
+            // Verify secrets
+            var secretErrors = new Set();
+            repository.secrets.forEach((secret, index) => {
+                if (secret.secretValue === null) {
+                    if (secret.status === statusCreated) {
+                        secret.secretValue = "";
+                        model.setProperty(selectedItemPath + "/secrets/" + index, secret);
+                    }
+                }
+
+                if (secret.secretKey === null || secret.secretKey === "") {
+                    secretErrors.add("Secrets with an empty key are not allowed!");
+                }
+
+                for (var i = index + 1; i < repository.secrets.length; i++) {
+                    // Deleted secrets are not a duplicate since they will be deleted before adding the new value
+                    if (secret.secretKey === repository.secrets[i].secretKey
+                        && secret.status !== statusDeleted 
+                        && repository.secrets[i].status !== statusDeleted) {
+                        secretErrors.add("Duplicate secret key found: \"" + secret.secretKey + "\"!");
+                    }
+                }
+            });
+
+            if (secretErrors.size > 0) {
+                let errorMessage = "Found the following errors:\n";
+                for (const secretError of secretErrors.values()) {
+                    errorMessage += " \u2022 " + secretError + "\n";
+                }
+
+                MessageBox.error(errorMessage);
+
+                return false;
+            }
+
+            return true;
+        },
+
+        createNewRepository: async function(repository, model) {
+            // Create repository, and then add its secrets.
             var success = true;
 
-            if (repository.isNew) {
-                // Create repository, and then add its secrets.
+            // Create repository
+            await HttpUtils.sendPostRequest(repositoryEndpointSave, repository)
+            .then(data => {
+                repository.id = data.id;
+                repository.url = data.url;
 
-                // Create repository
-                await HttpUtils.sendPostRequest(repositoryEndpointSave, repository)
+                var repositories = model.getProperty(repositoriesPath);
+                repositories.push(repository);
+                model.setProperty(repositoriesPath, repositories);
+
+                MessageToast.show("Repository created successfully!");
+            })
+            .catch(_ => {
+                success = false;
+            });
+
+            if (!success || repository.id == 0) {
+                MessageBox.error("Failed to create repository!");
+                return;
+            }
+
+            // Create secrets
+            repository.secrets.forEach((secret, index) => {
+                if (secret.secretValue === null) {
+                    secret.secretValue = "";
+                }
+
+                // Update the repository id of the secret
+                secret.repositoryId = repository.id;
+
+                HttpUtils.sendPostRequest(secretEndpointSave, secret)
                 .then(data => {
-                    repository.id = data.id;
-                    repository.url = data.url;
+                    secret = data;
+                    secret.secretValue = null;
+                    secret.status = statusNone;
+                    secret.isNew = false;
 
-                    var repositories = model.getProperty(repositoriesPath);
-                    repositories.push(repository);
-                    model.setProperty(repositoriesPath, repositories);
+                    model.setProperty(selectedItemPath + "/secrets/" + index, secret);
 
-                    MessageToast.show("Repository created successfully!");
+                    MessageToast.show("Secret created successfully!");
                 })
                 .catch(_ => {
+                    MessageBox.error("Failed to create secret " + secret.secretKey + "!");
+
                     success = false;
                 });
+            });
+                
+            if (success) {
+                MessageBox.success("Repository created successfully!");
+            } else {
+                MessageBox.error("Repository created but an error occured while adding secrets!");
+            }
+        },
 
-                if (!success || repository.id == 0) {
-                    MessageBox.error("Failed to create repository!");
+        updateExistingRepository: async function(repository, originalRepository, model) {
+            // Delete secrets first, in case user added secrets with keys that were just deleted.
+            // After this, create new secrets and update old ones.
+            // Finally, update the reposiroty url if needed.
+            var success = true;
+
+            // Delete secrets
+            for (var i = 0; i < repository.secrets.length; i++) {
+                var secret = repository.secrets[i];
+                if (secret.status === statusDeleted) {
+                    await HttpUtils.sendDeleteRequest(secretEndpointDelete.replace("{id}", secret.id))
+                    .then(_ => {
+                        var selectedItemSecrets = model.getProperty(selectedItemPath + "/secrets");
+                        selectedItemSecrets.splice(i, 1);
+
+                        MessageToast.show("Secret deleted successfully!");
+                    })
+                    .catch(_ => {
+                        MessageBox.error("Failed to delete secret" + secret.secretKey + "!");
+
+                        success = false;
+                    });
+                }
+            };
+
+            // Create and update secrets
+            repository.secrets.forEach((secret, index) => {
+                if (secret.secretValue === null) {
                     return;
                 }
 
-                // Create secrets
-                repository.secrets.forEach((secret, index) => {
-                    // Update the repository id of the secret
-                    secret.repositoryId = repository.id;
-
+                if (secret.status === statusCreated) {
                     HttpUtils.sendPostRequest(secretEndpointSave, secret)
                     .then(data => {
                         secret = data;
@@ -270,103 +397,64 @@ sap.ui.define([
 
                         MessageToast.show("Secret created successfully!");
                     })
-                    .catch(error => {
+                    .catch(_ => {
                         MessageBox.error("Failed to create secret " + secret.secretKey + "!");
 
                         success = false;
                     });
-                });
-                
-                if (success) {
-                    MessageBox.success("Repository created successfully!");
-                } else {
-                    MessageBox.error("Repository created but an error occured while adding secrets!");
-                }
-            } else {
-                // Delete secrets first, in case user added secrets with keys that were just deleted.
-                // After this, create new secrets and update old ones.
-                // Finally, update the reposiroty url if needed.
-
-                // Delete secrets
-                for (var i = 0; i < repository.secrets.length; i++) {
-                    var secret = repository.secrets[i];
-                    if (secret.status === statusDeleted) {
-                        await HttpUtils.sendDeleteRequest(secretEndpointDelete.replace("{id}", secret.id))
-                        .then(_ => {
-                            var selectedItemSecrets = model.getProperty(selectedItemPath + "/secrets");
-                            selectedItemSecrets.splice(i, 1);
-
-                            MessageToast.show("Secret deleted successfully!");
-                        })
-                        .catch(_ => {
-                            MessageBox.error("Failed to delete secret" + secret.secretKey + "!");
-
-                            success = false;
-                        });
-                    }
-                };
-
-                // Create and update secrets
-                repository.secrets.forEach((secret, index) => {
-                    if (secret.secretValue === null) {
-                        return;
-                    }
-
-                    if (secret.status === statusCreated) {
-                        HttpUtils.sendPostRequest(secretEndpointSave, secret)
-                        .then(data => {
-                            secret = data;
-                            secret.secretValue = null;
-                            secret.status = statusNone;
-                            secret.isNew = false;
-
-                            model.setProperty(selectedItemPath + "/secrets/" + index, secret);
-
-                            MessageToast.show("Secret created successfully!");
-                        })
-                        .catch(_ => {
-                            MessageBox.error("Failed to create secret " + secret.secretKey + "!");
-
-                            success = false;
-                        });
-                    } else if (secret.status === statusModified) {
-                        HttpUtils.sendPutRequest(secretEndpointUpdate.replace("{id}", secret.id), secret)
-                        .then(data => {
-                            secret = data;
-                            secret.secretValue = null;
-                            secret.status = statusNone;
-                            secret.isNew = false;
-
-                            model.setProperty(selectedItemPath + "/secrets/" + index, secret);
-
-                            MessageToast.show("Secret updated successfully!");
-                        })
-                        .catch(_ => {
-                            MessageBox.error("Failed to update secret " + secret.secretKey + "!");
-
-                            success = false;
-                        });
-                    }
-                });
-
-                // Update repository
-                if (repository.url !== originalRepository.url) {
-                    HttpUtils.sendPutRequest(repositoryEndpointUpdate.replace("{id}", repository.id), repository)
+                } else if (secret.status === statusModified) {
+                    HttpUtils.sendPutRequest(secretEndpointUpdate.replace("{id}", secret.id), secret)
                     .then(data => {
-                        repository.url = data.url;
+                        secret = data;
+                        secret.secretValue = null;
+                        secret.status = statusNone;
+                        secret.isNew = false;
 
-                        MessageToast.show("Repository updated successfully!");
+                        model.setProperty(selectedItemPath + "/secrets/" + index, secret);
+
+                        MessageToast.show("Secret updated successfully!");
                     })
                     .catch(_ => {
-                        MessageBox.error("Failed to update repository " + secret.secretKey + "!");
+                        MessageBox.error("Failed to update secret " + secret.secretKey + "!");
+
+                        success = false;
                     });
                 }
+            });
 
-                if (success) {
-                    MessageBox.success("Repository updated successfully!");
-                } else {
-                    MessageBox.error("Failed to update repository!");
-                }
+            // Update repository
+            if (repository.url !== originalRepository.url) {
+                HttpUtils.sendPutRequest(repositoryEndpointUpdate.replace("{id}", repository.id), repository)
+                .then(data => {
+                    repository.url = data.url;
+
+                    MessageToast.show("Repository updated successfully!");
+                })
+                .catch(_ => {
+                    MessageBox.error("Failed to update repository " + secret.secretKey + "!");
+                });
+            }
+
+            if (success) {
+                MessageBox.success("Repository updated successfully!");
+            } else {
+                MessageBox.error("Failed to update repository!");
+            }
+        },
+
+        onEditDialogSavePress: async function (event) {
+            var model = this.getView().getModel();
+            var originalRepository = model.getProperty(originalItemPath);
+            var repository = model.getProperty(selectedItemPath);
+
+            if (!this.validateRepository(repository, model)) {
+                return;
+            }
+
+            if (repository.isNew) {
+                await this.createNewRepository(repository, model);
+            } else {
+                await this.updateExistingRepository(repository, originalRepository, model);
             }
 
             model.setProperty(selectedItemPath, repository);
@@ -387,6 +475,12 @@ sap.ui.define([
             // var dialog = event.getSource().getParent().getParent();
             var dialog = this.byId(editDialogId);
             dialog.close();
+        },
+
+        onEditDialogEscapePress: function(promise) {
+            this.onEditDialogCancelPress();
+
+            promise.resolve();
         },
 
         onSecretAddButtonPress: function () {
@@ -449,7 +543,7 @@ sap.ui.define([
 
         onSecretDeleteRowPress: function (event) {
             var model = this.getView().getModel();
-            var secretListItem = event.getSource().getParent().getParent();
+            var secretListItem = event.getSource().getParent();
             var secretModelPath = secretListItem.getBindingContext().getPath();
 
             var secret = model.getProperty(secretModelPath);

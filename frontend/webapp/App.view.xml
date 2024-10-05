@@ -24,8 +24,7 @@
                 </headerToolbar>
 
                 <columns>
-                    <Column
-                        width="8rem">
+                    <Column width="8rem">
                         <Text text="Id" />
                     </Column>
                     <Column>
@@ -41,10 +40,8 @@
                 <items>
                     <ColumnListItem>
                         <cells>
-                            <Text
-                                text="{id}" />
-                            <Text
-                                text="{url}" />
+                            <Text text="{id}" />
+                            <Text text="{url}" />
                             <HBox>
                                 <items>
                                     <Button 
@@ -63,9 +60,13 @@
                 </items>
             </Table>
 
-            <Dialog id="verifyDialog" title="Verify Secrets">
+            <Dialog 
+                id="verifyDialog"
+                title="Verify Secrets"
+                contentWidth="640px"
+                contentHeight="210px" >
                 <content>
-                    <VBox>
+                    <VBox class="sapUiSmallMargin">
                         <Label text="Url" />
                         <Select
                             id="verifyDialogRepositoryComboBox"
@@ -95,12 +96,17 @@
                 </buttons>
             </Dialog>
 
-            <Dialog id="editDialog" title="Edit Repository">
+            <Dialog 
+                id="editDialog"
+                title="Edit Repository"
+                contentWidth="640px"
+                contentHeight="480px"
+                escapeHandler=".onEditDialogEscapePress" >
                 <content>
-                    <VBox>
+                    <VBox class="sapUiSmallMargin">
                         <Label text="Url" />
                         <Input id="urlInput" value="{/selectedItem/url}" />
-                        <List showSeparators="None" items="{/selectedItem/secrets}" >
+                        <Table showSeparators="None" items="{/selectedItem/secrets}" >
                             <headerToolbar>
                                 <Toolbar>
                                     <Title text="Secrets" />
@@ -111,34 +117,49 @@
                                 </Toolbar>
                             </headerToolbar>
 
-                            <CustomListItem
-                                visible="{= ${status} !== 'Deleted' }" >
-                                <HBox alignItems="Center" justifyContent="SpaceBetween">
-                                    <VBox>
-                                        <Input 
-                                            value="{secretKey}" 
-                                            visible="{= ${isNew} === true }"
-                                            placeholder="Enter secret key"
-                                            change="onSecretKeyInputChange" />
+                            <columns>
+                                <Column>
+                                    <Text text="Key" />
+                                </Column>
+                                <Column>
+                                    <Text text="Value" />
+                                </Column>
+                                <Column
+                                    width="100px"
+                                    demandPopin="true">
+                                    <Text text="Actions" />
+                                </Column>
+                            </columns>
 
-                                        <Title 
-                                            level="H3"
-                                            text="{secretKey}"
-                                            visible="{= ${isNew} === false }" />
-                                    </VBox>
-                                    <Input
-                                        class="sapUiTinyMargin"
-                                        value="{secretValue}"
-                                        change="onSecretValueInputChange"
-                                        placeholder="********" />
-                                    <Button 
-                                        text="Delete"
-                                        type="Reject"
-                                        press="onSecretDeleteRowPress">
-                                    </Button>
-                                </HBox>
-                            </CustomListItem>
-                        </List>
+                            <items>
+                                <ColumnListItem visible="{= ${status} !== 'Deleted' }">
+                                    <cells>
+                                        <VBox>
+                                            <Input 
+                                                value="{secretKey}" 
+                                                visible="{= ${isNew} === true }"
+                                                placeholder="Enter secret key"
+                                                change="onSecretKeyInputChange" />
+
+                                            <Title 
+                                                level="H3"
+                                                text="{secretKey}"
+                                                visible="{= ${isNew} === false }" />
+                                        </VBox>
+                                        <Input
+                                            class="sapUiTinyMargin"
+                                            value="{secretValue}"
+                                            change="onSecretValueInputChange"
+                                            placeholder="********" />
+                                        <Button 
+                                            text="Delete"
+                                            type="Reject"
+                                            press="onSecretDeleteRowPress">
+                                        </Button>
+                                    </cells>
+                                </ColumnListItem>
+                            </items>
+                        </Table>
                     </VBox>
                 </content>
                 <buttons>
