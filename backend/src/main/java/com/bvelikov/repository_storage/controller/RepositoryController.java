@@ -10,6 +10,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 
 @RestController()
@@ -44,6 +45,7 @@ public class RepositoryController {
     @PostMapping("")
     public RepositoryDTO saveRepository(@RequestBody RepositoryDTO repositoryDTO) {
         Repository repository = RepositoryDTO.fromDTO(repositoryDTO);
+        repository.setSecrets(new HashSet<>());
         repository.setId(null);
 
         repository = repositoryRepository.save(repository);
