@@ -17,6 +17,9 @@ secrets, used within a CI/CD pipeline.
 1. <b>Java 21</b> - The project is set up to use Java 21, but you can change this in pom.xml.
 2. <b>Node.js</b>
 3. <b>UI5</b> - Use the following command to install UI5 locally: `npm install --global @ui5/cli`
+4. <b>Set up a database</b> - The backend application is set up to use MySQL database (https://dev.mysql.com/). 
+Before running it, you also need to set an environment variable called `MYSQL_ROOT_PASSWORD` to your MySQL password.
+Make sure the connection string and username in the `application.properties` file are correct for your environment.
 ### Installation <a name="installation"></a>
 #### Cloning the repository
 ```shell
