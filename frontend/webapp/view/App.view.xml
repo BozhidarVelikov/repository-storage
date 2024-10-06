@@ -8,45 +8,46 @@
 		<Page title="Repositories Page">
 			<Table
                 id="repostiryTable"
-                items="{/repositories}" >
+                items="{/repositories}">
                 <headerToolbar>
                     <Toolbar>
-                        <Title text="Repositories" />
-                        <ToolbarSpacer />
+                        <Title text="Repositories"/>
+                        <ToolbarSpacer/>
                         <Button 
                             text="Verify Secret"
                             visible="{= ${/repositories}.length > 0}"
-                            press="onVerifySecretButtonPress" />
+                            press="onVerifySecretButtonPress"/>
                         <Button 
                             text="Add Repository" 
-                            press="onRepositoryAddButtonPress" />
+                            press="onRepositoryAddButtonPress"/>
                     </Toolbar>
                 </headerToolbar>
 
                 <columns>
                     <Column width="8rem">
-                        <Text text="Id" />
+                        <Text text="Id"/>
                     </Column>
                     <Column>
-                        <Text text="Repository" />
+                        <Text text="Repository"/>
                     </Column>
                     <Column
                         width="12rem"
                         demandPopin="true">
-                        <Text text="Actions" />
+                        <Text text="Actions"/>
                     </Column>
                 </columns>
 
                 <items>
                     <ColumnListItem>
                         <cells>
-                            <Text text="{id}" />
-                            <Text text="{url}" />
+                            <Text text="{id}"/>
+                            <Text text="{url}"/>
                             <HBox>
                                 <items>
-                                    <Button 
+                                    <Button
                                         text="Edit"
-                                        press="onRepostiryTableEditRowPress">
+                                        press="onRepostiryTableEditRowPress"
+                                        class="sapUiTinyMarginEnd">
                                     </Button>
                                     <Button 
                                         text="Delete"
@@ -64,35 +65,35 @@
                 id="verifyDialog"
                 title="Verify Secrets"
                 contentWidth="640px"
-                contentHeight="210px" >
+                contentHeight="210px">
                 <content>
                     <VBox class="sapUiSmallMargin">
-                        <Label text="Url" />
+                        <Label text="Url"/>
                         <Select
                             id="verifyDialogRepositoryComboBox"
                             selectedKey="{/selectedRepositoryId}"
                             change="onRepositoryChange"
-                            items="{/repositories}">
-                            <core:Item key="{id}" text="{url}" />
+                            items="{/repositories}" >
+                            <core:Item key="{id}" text="{url}"/>
                         </Select>
-                        <Label text="Key" />
+                        <Label text="Key"/>
                         <Select
                             id="verifyDialogSecretKeyComboBox"
                             selectedKey="{/selectedKeyId}"
                             items="{/selectedItem/secrets}">
-                            <core:Item key="{id}" text="{secretKey}" />
+                            <core:Item key="{id}" text="{secretKey}"/>
                         </Select>
-                        <Input id="verifyDialogSecretValueInput" />
+                        <Input id="verifyDialogSecretValueInput"/>
                     </VBox>
                 </content>
                 <buttons>
                     <Button 
                         text="Verify"
-                        press="onVerifySecretDialogVerifyPress" />
+                        press="onVerifySecretDialogVerifyPress"/>
                     <Button
                         text="Cancel"
                         type="Reject"
-                        press="onVerifySecretDialogCancelPress" />
+                        press="onVerifySecretDialogCancelPress"/>
                 </buttons>
             </Dialog>
 
@@ -101,33 +102,33 @@
                 title="Edit Repository"
                 contentWidth="640px"
                 contentHeight="480px"
-                escapeHandler=".onEditDialogEscapePress" >
+                escapeHandler=".onEditDialogEscapePress">
                 <content>
                     <VBox class="sapUiSmallMargin">
-                        <Label text="Url" />
-                        <Input id="urlInput" value="{/selectedItem/url}" />
-                        <Table showSeparators="None" items="{/selectedItem/secrets}" >
+                        <Label text="Url"/>
+                        <Input id="urlInput" value="{/selectedItem/url}"/>
+                        <Table showSeparators="None" items="{/selectedItem/secrets}">
                             <headerToolbar>
                                 <Toolbar>
-                                    <Title text="Secrets" />
-                                    <ToolbarSpacer />
+                                    <Title text="Secrets"/>
+                                    <ToolbarSpacer/>
                                     <Button 
                                         text="Add Secret" 
-                                        press="onSecretAddButtonPress" />
+                                        press="onSecretAddButtonPress"/>
                                 </Toolbar>
                             </headerToolbar>
 
                             <columns>
                                 <Column>
-                                    <Text text="Key" />
+                                    <Text text="Key"/>
                                 </Column>
                                 <Column>
-                                    <Text text="Value" />
+                                    <Text text="Value"/>
                                 </Column>
                                 <Column
                                     width="100px"
                                     demandPopin="true">
-                                    <Text text="Actions" />
+                                    <Text text="Actions"/>
                                 </Column>
                             </columns>
 
@@ -139,18 +140,18 @@
                                                 value="{secretKey}" 
                                                 visible="{= ${isNew} === true }"
                                                 placeholder="Enter secret key"
-                                                change="onSecretKeyInputChange" />
+                                                change="onSecretKeyInputChange"/>
 
                                             <Title 
                                                 level="H3"
                                                 text="{secretKey}"
-                                                visible="{= ${isNew} === false }" />
+                                                visible="{= ${isNew} === false }"/>
                                         </VBox>
                                         <Input
                                             class="sapUiTinyMargin"
                                             value="{secretValue}"
                                             change="onSecretValueInputChange"
-                                            placeholder="********" />
+                                            placeholder="********"/>
                                         <Button 
                                             text="Delete"
                                             type="Reject"
@@ -165,11 +166,11 @@
                 <buttons>
                     <Button 
                         text="Save"
-                        press="onEditDialogSavePress" />
+                        press="onEditDialogSavePress"/>
                     <Button
                         text="Cancel"
                         type="Reject"
-                        press="onEditDialogCancelPress" />
+                        press="onEditDialogCancelPress"/>
                 </buttons>
             </Dialog>
 		</Page>
