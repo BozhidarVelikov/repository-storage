@@ -4,6 +4,6 @@ sap.ui.define([
 	"use strict";
 
 	XMLView.create({
-		viewName: "ui5.repositorystorage.App"
+		viewName: "ui5.repositorystorage.view.App"
 	}).then((oView) => oView.placeAt("content"));
 });

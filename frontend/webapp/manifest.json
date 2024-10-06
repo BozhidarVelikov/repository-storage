@@ -1,17 +1,24 @@
 {
     "_version": "1.58.0",
-    "sap.app": {
-      "id": "ui5.repositorystorage"
-    },
+   	"sap.app": {
+		"id": "ui5.repositorystorage",
+    	"type": "application",
+    	"title": "Repository Storage Application",
+    	"description": "A UI5 app for managing repository storage.",
+    	"applicationVersion": {
+    		"version": "1.0.0"
+    	}
+  	},
     "sap.ui5": {
 		"rootView": {
-			"viewName": "ui5.repositorystorage.App",
+			"viewName": "ui5.repositorystorage.view.App",
 			"type": "XML",
 			"async": true
 		},
 		"dependencies": {
 			"libs": {
 				"sap.f": {},
+				"sap.m": {},
 				"sap.ui.core": {}
 			}
 		}
