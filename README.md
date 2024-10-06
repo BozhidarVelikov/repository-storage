@@ -48,6 +48,7 @@ The backend will be accessible at http://localhost:8080.
 #### Frontend
 To run the application locally:
 ```shell
+cd frontend
 npm start
 ```
 The application will be accessible at http://localhost:3000.
