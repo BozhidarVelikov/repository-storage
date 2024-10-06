@@ -3,6 +3,6 @@
     "version": "1.0.0",
     "description": "A frontend application for the repository-storage backend written with UI5.",
     "scripts": {
-        "start": "ui5 serve -o index.html"
+        "start": "ui5 serve -p 3000 -o index.html"
     }
   }
