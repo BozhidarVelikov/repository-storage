@@ -453,6 +453,7 @@ sap.ui.define([
 
             if (repository.isNew) {
                 await this.createNewRepository(repository, model);
+                repository.isNew = false;
             } else {
                 await this.updateExistingRepository(repository, originalRepository, model);
             }
