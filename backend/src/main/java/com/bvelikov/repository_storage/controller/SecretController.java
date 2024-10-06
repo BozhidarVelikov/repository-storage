@@ -108,7 +108,6 @@ public class SecretController {
      */
     @PutMapping("/{id}")
     public ResponseEntity<SecretDTO> updateSecret(@PathVariable Long id,  @RequestBody SecretDTO secretDTO) {
-        System.out.println("update");
         Optional<Repository> repository = repositoryRepository.findById(secretDTO.getRepositoryId());
         if (repository.isEmpty()) {
             return ResponseEntity.notFound().build();
