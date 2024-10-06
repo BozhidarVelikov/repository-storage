@@ -12,6 +12,13 @@ public class EncryptionUtil {
 
     private static final SecretKey SECRET_KEY = KeyManagement.getKey();
 
+    /**
+     * A method that encrypts a string value.
+     *
+     * @param value The value to be encrypted
+     * @return The IV used for the encryption, combined with the encrypted value
+     * @exception Exception if an error occurs while encrypting the value
+     */
     public static String encrypt(String value) throws Exception {
         Cipher cipher = Cipher.getInstance(ALGORITHM);
         byte[] iv = new byte[IV_SIZE];
@@ -30,6 +37,14 @@ public class EncryptionUtil {
         return Base64.getEncoder().encodeToString(combined);
     }
 
+    /**
+     * A method that decrypts a string value.
+     *
+     * @param encryptedValue The value to be decrypted. The value's first 16 bytes should contain the IV to be used for
+     *                       decryption.
+     * @return The decrypted value
+     * @exception Exception if an error occurs while decrypting the value
+     */
     public static String decrypt(String encryptedValue) throws Exception {
         byte[] decodedValue = Base64.getDecoder().decode(encryptedValue);
         byte[] iv = new byte[IV_SIZE];
