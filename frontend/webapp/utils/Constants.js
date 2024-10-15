@@ -29,7 +29,6 @@ sap.ui.define([], function() {
         REPOSITORY_ENDPOINT_VERIFY: REPOSITORY_ENDPOINT + "/verify/{id}",
 
         SECRET_ENDPOINT_LIST: SECRET_ENDPOINT + "/list",
-        SECRET_ENDPOINT_VERIFY: SECRET_ENDPOINT + "/verify",
         SECRET_ENDPOINT_SAVE: SECRET_ENDPOINT,
         SECRET_ENDPOINT_UPDATE: SECRET_ENDPOINT + "/{id}",
         SECRET_ENDPOINT_ADD_TO_REPOSITORY: SECRET_ENDPOINT + "/addToRepository/{id}?repositoryId={repositoryId}",

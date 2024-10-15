@@ -384,6 +384,13 @@ sap.ui.define([
             dialog.open();
         },
 
+        /**
+         * Executes the logic of the "Select" button on "Select Secret" dialog.
+         * 
+         * Selects the secret and adds it to the repository.
+         * 
+         * @public
+         */
         onSelectSecretDialogSelectPress: function() {
             var model = this.getView().getModel();
             var secrets = model.getProperty(Constants.SECRETS_PATH);
@@ -426,6 +433,13 @@ sap.ui.define([
             dialog.close();
         },
 
+        /**
+         * Executes the logic of a selection change when selecting a secret in the "Select Secret" dialog.
+         * 
+         * Opens the "Select Secret" popup.
+         * 
+         * @public
+         */
         onSelectSecretDialogSecretChange: function(event) {
             var model = this.getView().getModel();
             var newValueId = event.getSource().getSelectedKey();
@@ -433,6 +447,13 @@ sap.ui.define([
             model.setProperty(Constants.EXISTING_SECRET_ID_PATH, newValueId);
         },
 
+        /**
+         * Executes the logic of the "Cancel" button on "Select Secret" dialog.
+         * 
+         * Clears the secret selection and closes the popup.
+         * 
+         * @public
+         */
         onSelectSecretDialogCancelPress: function() {
             var model = this.getView().getModel();
             var secrets = model.getProperty(Constants.SECRETS_PATH);
@@ -445,6 +466,13 @@ sap.ui.define([
             dialog.close();
         },
 
+        /**
+         * Executes the logic of the "Esc" keyboard button on "Select Secret" dialog.
+         * 
+         * Executes the "Cancel" button press logic.
+         * 
+         * @public
+         */
         onSelectedSecretDialogEscapePress: function(promise) {
             this.onSelectSecretDialogCancelPress();
 

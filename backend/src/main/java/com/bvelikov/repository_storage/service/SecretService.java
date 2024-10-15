@@ -40,41 +40,6 @@ public class SecretService {
     }
 
     /**
-     * A method that verifies a secret's value.
-     *
-     * @param secretDTO the secret details, passed in the request's body
-     * @return Response entity with response code 200 if the secret is successfully verified,
-     *         response entity with response code 400 if the secret is not successfully verified,
-     *         response entity with response code 404 if the secret or its repository do not exist.
-     */
-    public ResponseEntity<Void> verifySecret(SecretDTO secretDTO) {
-        Optional<Repository> repository = repositoryRepository.findById(secretDTO.getRepositoryId());
-        if (repository.isEmpty()) {
-            return ResponseEntity.notFound().build();
-        }
-
-        Optional<Secret> potentialSecret = secretRepository.findByRepositoriesInAndSecretKey(List.of(repository.get()), secretDTO.getSecretKey());
-        if (potentialSecret.isEmpty()) {
-            return ResponseEntity.notFound().build();
-        }
-
-        Secret secret = potentialSecret.get();
-
-        String decryptedValue;
-        try {
-            decryptedValue = EncryptionUtil.decrypt(secret.getSecretValue());
-        } catch (Exception e) {
-            return ResponseEntity.internalServerError().build();
-        }
-
-        if (secretDTO.getSecretValue().equals(decryptedValue)) {
-            return ResponseEntity.ok().build();
-        }
-
-        return ResponseEntity.badRequest().build();
-    }
-
-    /**
      * A method that saves a secret into the database.
      *
      * @param secretDTO the secret details, passed in the request's body

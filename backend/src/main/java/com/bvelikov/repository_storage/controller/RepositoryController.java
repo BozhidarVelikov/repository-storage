@@ -70,6 +70,15 @@ public class RepositoryController {
         }
     }
 
+    /**
+     * A method that verifies if a repository's secrets are correct.
+     *
+     * @param id the repository id, passed in the request path
+     * @return Response entity with response code 200 if the secrets are correct,
+     *         response entity with response code 400 if the repository type is not supported,
+     *         response entity with response code 404 if the repository is not found,
+     *         response entity with response code of the response from the repository provider if the secret is wrong.
+     */
     @GetMapping("/verify/{id}")
     public ResponseEntity<Void> verifyRepository(@PathVariable Long id) {
         Optional<Repository> potentialRepository = repositoryRepository.findById(id);
@@ -88,6 +97,16 @@ public class RepositoryController {
         }
     }
 
+    /**
+     * A method that verifies if a GitHub repository.
+     *
+     * @param id the repository id, passed in the request path
+     * @return Response entity with response code 200 if the secrets are correct,
+     *         response entity with response code 400 if the repository type is not supported,
+     *         response entity with response code 404 if the repository is not found,
+     *         response entity with response code 503 if an error occurs while decrypting the secret,
+     *         response entity with response code of the response from the repository provider if the secret is wrong.
+     */
     private ResponseEntity<Void> verifyGitHubRepository(Repository repository) {
         if (repository.getSecrets().size() > 1) {
             return ResponseEntity.badRequest().build();

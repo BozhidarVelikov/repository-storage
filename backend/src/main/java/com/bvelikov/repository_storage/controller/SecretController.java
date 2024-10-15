@@ -1,7 +1,6 @@
 package com.bvelikov.repository_storage.controller;
 
 import com.bvelikov.repository_storage.dto.SecretDTO;
-import com.bvelikov.repository_storage.model.Secret;
 import com.bvelikov.repository_storage.service.SecretService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -19,11 +18,6 @@ public class SecretController {
     @GetMapping("/list")
     public ResponseEntity<List<SecretDTO>> getAllSecrets() {
         return secretService.getAllSecrets();
-    }
-
-    @PostMapping("/verify")
-    public ResponseEntity<Void> verifySecret(@RequestBody SecretDTO secretDTO) {
-        return secretService.verifySecret(secretDTO);
     }
 
     @PostMapping("")
