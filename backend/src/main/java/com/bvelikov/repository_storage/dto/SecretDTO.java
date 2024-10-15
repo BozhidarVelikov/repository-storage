@@ -49,12 +49,12 @@ public class SecretDTO {
         return secret;
     }
 
-    public static SecretDTO toDTO(Secret secret) {
+    public static SecretDTO toDTO(Secret secret, Long repositoryId) {
         SecretDTO secretDTO = new SecretDTO();
         secretDTO.setId(secret.getId());
         secretDTO.setSecretKey(secret.getSecretKey());
         secretDTO.setSecretValue(null);
-        secretDTO.setRepositoryId(secret.getRepository().getId());
+        secretDTO.setRepositoryId(repositoryId);
 
         return secretDTO;
     }

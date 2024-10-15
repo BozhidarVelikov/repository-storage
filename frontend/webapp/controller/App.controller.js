@@ -2,11 +2,10 @@ sap.ui.define([
     "sap/ui/core/mvc/Controller",
     "sap/ui/model/json/JSONModel",
     "sap/m/MessageBox",
-    "sap/m/MessageToast",
     "ui5/repositorystorage/utils/Constants",
     "ui5/repositorystorage/utils/HttpUtils",
     "ui5/repositorystorage/utils/RepositoryUtils",
-], (Controller, JSONModel, MessageBox, MessageToast, Constants, HttpUtils, RepositoryUtils) => {
+], (Controller, JSONModel, MessageBox, Constants, HttpUtils, RepositoryUtils) => {
     "use strict";
 
     return Controller.extend("ui5.repositorystorage.controller.App", {
@@ -23,7 +22,8 @@ sap.ui.define([
                 selectedItem: {},
                 originalItem: {},
                 selectedRepositoryId: null,
-                selectedKeyId: null
+                selectedKeyId: null,
+                existingSecretId: null
             });
 
             // Load repository data from endpoint
@@ -39,6 +39,20 @@ sap.ui.define([
                 model.setProperty(Constants.REPOSITORIES_PATH, data);
 
                 this.resetSelectedIds(model, data);
+            })
+            .catch(error => {
+                console.log(error);
+                MessageBox.error("Failed to fetch repositories!");
+            });
+
+            // Load repository data from endpoint
+            HttpUtils.sendGetRequest(Constants.SECRET_ENDPOINT_LIST)
+            .then(data => {
+                data.forEach(secret => {
+                    secret.status = Constants.STATUS_NONE;
+                    secret.isNew = false;
+                });
+                model.setProperty(Constants.SECRETS_PATH, data);
             })
             .catch(error => {
                 console.log(error);
@@ -275,7 +289,7 @@ sap.ui.define([
 
                 model.setProperty(Constants.REPOSITORIES_PATH, repositories);
 
-                MessageToast.show("Repository deleted successfully!");
+                MessageBox.success("Repository deleted successfully!");
             })
             .catch(_ => {
                 MessageBox.error("Failed to delete repository!");
@@ -348,7 +362,7 @@ sap.ui.define([
         },
 
         /**
-         * Executes the logic of the "Add Secret" button on "Edit Repository" dialog.
+         * Executes the logic of the "Add New Secret" button on "Edit Repository" dialog.
          * 
          * Creates a new secret object and adds it to the repository.
          * 
@@ -370,6 +384,94 @@ sap.ui.define([
             selectedRepository.secrets.push(newSecret);
 
             model.setProperty(Constants.SELECTED_ITEM_PATH, selectedRepository);
+        },
+
+        /**
+         * Executes the logic of the "Add Existing Secret" button on "Edit Repository" dialog.
+         * 
+         * Creates a new secret object and adds it to the repository.
+         * 
+         * @public
+         */
+        onSecretAddExistingButtonPress: function() {
+            var model = this.getView().getModel();
+            var secrets = model.getProperty(Constants.SECRETS_PATH);
+
+            if (secrets.length > 0) {
+                model.setProperty(Constants.EXISTING_SECRET_ID_PATH, secrets[0].id);
+            } else {
+                model.setProperty(Constants.EXISTING_SECRET_ID_PATH, null);
+            }
+
+            var dialog = this.byId(Constants.SELECT_SECRET_DIALOG_ID);
+            dialog.open();
+        },
+
+        onSelectSecretDialogSelectPress: function() {
+            var model = this.getView().getModel();
+            var secrets = model.getProperty(Constants.SECRETS_PATH);
+            var selectedSecretId = model.getProperty(Constants.EXISTING_SECRET_ID_PATH);
+            var selectedRepository = model.getProperty(Constants.SELECTED_ITEM_PATH);
+
+            var selectedSecret = null;
+            secrets.forEach(secret => {
+                if (secret.id == selectedSecretId) {
+                    selectedSecret = Object.assign({}, secret);
+                    selectedSecret.repositoryId = selectedRepository.id;
+                    selectedSecret.status = Constants.STATUS_ADDED;
+                    selectedSecret.isNew = true;
+                }
+            });
+
+            if (!selectedSecret) {
+                MessageBox.error("Error while adding secret to the repository!");
+                return;
+            }
+
+            var error = false;
+            selectedRepository.secrets.forEach(secret => {
+                if (secret.secretKey === selectedSecret.secretKey) {
+                    error = true;
+                }
+            });
+
+            if (error) {
+                MessageBox.error("Duplicate secret key!");
+                return;
+            }
+
+            selectedRepository.secrets.push(selectedSecret);
+
+            model.setProperty(Constants.SELECTED_ITEM_PATH, selectedRepository);
+            model.setProperty(Constants.EXISTING_SECRET_ID_PATH, null);
+
+            var dialog = this.byId(Constants.SELECT_SECRET_DIALOG_ID);
+            dialog.close();
+        },
+
+        onSelectSecretDialogSecretChange: function(event) {
+            var model = this.getView().getModel();
+            var newValueId = event.getSource().getSelectedKey();
+
+            model.setProperty(Constants.EXISTING_SECRET_ID_PATH, newValueId);
+        },
+
+        onSelectSecretDialogCancelPress: function() {
+            var model = this.getView().getModel();
+            var secrets = model.getProperty(Constants.SECRETS_PATH);
+
+            if (secrets.length > 0) {
+                model.setProperty(Constants.EXISTING_SECRET_ID_PATH, secrets[0].id);
+            }
+
+            var dialog = this.byId(Constants.SELECT_SECRET_DIALOG_ID);
+            dialog.close();
+        },
+
+        onSelectedSecretDialogEscapePress: function(promise) {
+            this.onSelectSecretDialogCancelPress();
+
+            promise.resolve();
         },
 
         /**
@@ -418,7 +520,7 @@ sap.ui.define([
             // Retrieve the secret item associated with the input
             var secret = inputContext.getObject();
             secret.secretValue = event.getParameter("value");
-            secret.status = secret.status === Constants.STATUS_CREATED ? secret.status : Constants.STATUS_MODIFIED;
+            secret.status = secret.status === Constants.STATUS_CREATED || Constants.STATUS_ADDED ? secret.status : Constants.STATUS_MODIFIED;
 
             model.setProperty(Constants.SELECTED_ITEM_PATH + "/secrets/" + secretIndex, secret);
         },
@@ -437,7 +539,7 @@ sap.ui.define([
             var secretModelPath = secretListItem.getBindingContext().getPath();
 
             var secret = model.getProperty(secretModelPath);
-            if (secret.status === Constants.STATUS_CREATED) {
+            if (secret.status === Constants.STATUS_CREATED || secret.status === Constants.STATUS_ADDED) {
                 // Item is located at /selectedItem/secrets/<index>
                 var secretIndex = parseInt(secretModelPath.split("/")[3]);
 

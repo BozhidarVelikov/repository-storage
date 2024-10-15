@@ -53,7 +53,7 @@ public class RepositoryDTO {
         repositoryDTO.setUrl(repository.getUrl());
 
         Set<SecretDTO> secretsDTO = new HashSet<>();
-        repository.getSecrets().forEach(secret -> secretsDTO.add(SecretDTO.toDTO(secret)));
+        repository.getSecrets().forEach(secret -> secretsDTO.add(SecretDTO.toDTO(secret, repository.getId())));
         repositoryDTO.setSecrets(secretsDTO);
 
         return repositoryDTO;

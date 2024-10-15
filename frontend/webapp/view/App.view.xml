@@ -113,8 +113,11 @@
                                     <Title text="Secrets"/>
                                     <ToolbarSpacer/>
                                     <Button 
-                                        text="Add Secret" 
+                                        text="Add New Secret" 
                                         press="onSecretAddButtonPress"/>
+                                    <Button 
+                                        text="Add Existing Secret" 
+                                        press="onSecretAddExistingButtonPress"/>
                                 </Toolbar>
                             </headerToolbar>
 
@@ -171,6 +174,34 @@
                         text="Cancel"
                         type="Reject"
                         press="onEditDialogCancelPress"/>
+                </buttons>
+            </Dialog>
+
+            <Dialog 
+                id="selectSecretDialog"
+                title="Select Secrets"
+                contentWidth="320px"
+                contentHeight="76px"
+                escapeHandler=".onSelectedSecretDialogEscapePress">
+                <content>
+                    <VBox class="sapUiSmallMargin">
+                        <Select
+                            id="selectSecretComboBox"
+                            selectedKey="{/existingSecretId}"
+                            change="onSelectSecretDialogSecretChange"
+                            items="{/secrets}" >
+                            <core:Item key="{id}" text="{secretKey}"/>
+                        </Select>
+                    </VBox>
+                </content>
+                <buttons>
+                    <Button 
+                        text="Select"
+                        press="onSelectSecretDialogSelectPress"/>
+                    <Button
+                        text="Cancel"
+                        type="Reject"
+                        press="onSelectSecretDialogCancelPress"/>
                 </buttons>
             </Dialog>
 		</Page>

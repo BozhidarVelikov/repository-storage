@@ -4,8 +4,10 @@ import com.bvelikov.repository_storage.dto.RepositoryDTO;
 import com.bvelikov.repository_storage.model.Repository;
 import com.bvelikov.repository_storage.repository.RepositoryRepository;
 import com.bvelikov.repository_storage.repository.SecretRepository;
+import com.bvelikov.repository_storage.service.SecretService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -22,6 +24,9 @@ public class RepositoryController {
 
     @Autowired
     private SecretRepository secretRepository;
+
+    @Autowired
+    private SecretService secretService;
 
     /**
      * A method that lists all repositories.
@@ -98,7 +103,15 @@ public class RepositoryController {
             return ResponseEntity.notFound().build();
         }
 
-        secretRepository.findAllByRepository_Id(id).forEach(secret -> secretRepository.delete(secret));
+        secretRepository.findByRepositories(potentialRepository.get())
+                .forEach(secret -> {
+                    ResponseEntity<Void> response = secretService.deleteSecret(secret.getId(), potentialRepository.get().getId());
+                    if (response.getStatusCode() != HttpStatusCode.valueOf(204)) {
+                        System.out.println("Error: " + response.getStatusCode());
+                    } else {
+                        System.out.println("Ok");
+                    }
+                });
 
         repositoryRepository.deleteById(id);
 

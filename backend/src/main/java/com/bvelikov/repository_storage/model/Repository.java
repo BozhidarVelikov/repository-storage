@@ -14,7 +14,12 @@ public class Repository {
     @Column(nullable = false, unique = true)
     private String url;
 
-    @OneToMany(mappedBy = "repository")
+    @ManyToMany
+    @JoinTable(
+            name = "repository_secrets",
+            joinColumns = @JoinColumn(name = "repository_id"),
+            inverseJoinColumns = @JoinColumn(name = "secret_id")
+    )
     private Set<Secret> secrets;
 
     public Long getId() {

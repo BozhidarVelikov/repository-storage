@@ -2,6 +2,9 @@ package com.bvelikov.repository_storage.model;
 
 import jakarta.persistence.*;
 
+import java.util.HashSet;
+import java.util.Set;
+
 @Entity
 @Table(name = "secrets")
 public class Secret {
@@ -15,9 +18,8 @@ public class Secret {
     @Column(nullable = false)
     private String secretValue;
 
-    @ManyToOne()
-    @JoinColumn(name = "repository_id", nullable = false)
-    private Repository repository;
+    @ManyToMany(mappedBy = "secrets")
+    private Set<Repository> repositories = new HashSet<>();;
 
     public Long getId() {
         return id;
@@ -43,11 +45,11 @@ public class Secret {
         this.secretValue = secretValue;
     }
 
-    public Repository getRepository() {
-        return repository;
+    public Set<Repository> getRepositories() {
+        return repositories;
     }
 
-    public void setRepository(Repository repository) {
-        this.repository = repository;
+    public void setRepositories(Set<Repository> repositories) {
+        this.repositories = repositories;
     }
 }

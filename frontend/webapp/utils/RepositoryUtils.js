@@ -1,9 +1,8 @@
 sap.ui.define([
     "sap/m/MessageBox",
-    "sap/m/MessageToast",
     "ui5/repositorystorage/utils/Constants",
     "ui5/repositorystorage/utils/HttpUtils"
-], (MessageBox, MessageToast, Constants, HttpUtils) => {
+], (MessageBox, Constants, HttpUtils) => {
     "use strict";
 
     return {
@@ -15,6 +14,11 @@ sap.ui.define([
          * @public
          */
         validateRepository: function(repository, model) {
+            if (repository.url === null || repository.url === "") {
+                MessageBox.error("Url shouldn't be empty!");
+                return false;
+            }
+
             // Verify repository url
             var numberOfRepositoriesWithEditedUrl = 0;
             var repositories = model.getProperty(Constants.REPOSITORIES_PATH);
@@ -30,6 +34,7 @@ sap.ui.define([
             }
 
             // Verify secrets
+            var allSecrets = model.getProperty(Constants.SECRETS_PATH);
             var secretErrors = new Set();
             repository.secrets.forEach((secret, index) => {
                 if (secret.secretValue === null) {
@@ -51,6 +56,12 @@ sap.ui.define([
                         secretErrors.add("Duplicate secret key found: \"" + secret.secretKey + "\"!");
                     }
                 }
+
+                allSecrets.forEach(s => {
+                    if (s.secretKey === secret.secretKey && secret.status === Constants.STATUS_CREATED) {
+                        secretErrors.add("You alredy have a secret with key " + secret.secretKey + "!");
+                    }
+                });
             });
 
             if (secretErrors.size > 0) {
@@ -88,8 +99,6 @@ sap.ui.define([
                 var repositories = model.getProperty(Constants.REPOSITORIES_PATH);
                 repositories.push(repository);
                 model.setProperty(Constants.REPOSITORIES_PATH, repositories);
-
-                MessageToast.show("Repository created successfully!");
             })
             .catch(_ => {
                 success = false;
@@ -101,6 +110,7 @@ sap.ui.define([
             }
 
             // Create secrets
+            var allSecrets = model.getProperty(Constants.SECRETS_PATH);
             repository.secrets.forEach((secret, index) => {
                 if (secret.secretValue === null) {
                     secret.secretValue = "";
@@ -108,6 +118,25 @@ sap.ui.define([
 
                 // Update the repository id of the secret
                 secret.repositoryId = repository.id;
+
+                if (secret.status === Constants.STATUS_ADDED) {
+                    HttpUtils.sendPutRequest(Constants.SECRET_ENDPOINT_ADD_TO_REPOSITORY.replace("{id}", secret.id).replace("{repositoryId}", secret.repositoryId), null)
+                    .then(data => {
+                        secret = data;
+                        secret.secretValue = null;
+                        secret.status = Constants.STATUS_NONE;
+                        secret.isNew = false;
+
+                        model.setProperty(Constants.SELECTED_ITEM_PATH + "/secrets/" + index, secret);
+                    })
+                    .catch(_ => {
+                        MessageBox.show("Failed to add secret " + secret.secretKey + "!");
+
+                        success = false;
+                    });
+
+                    return;
+                }
 
                 HttpUtils.sendPostRequest(Constants.SECRET_ENDPOINT_SAVE, secret)
                 .then(data => {
@@ -118,13 +147,17 @@ sap.ui.define([
 
                     model.setProperty(Constants.SELECTED_ITEM_PATH + "/secrets/" + index, secret);
 
-                    MessageToast.show("Secret created successfully!");
+                    var newSecret = Object.assign({}, secret);
+                    newSecret.repositoryId = 0;
+                    allSecrets.push(newSecret);
                 })
                 .catch(_ => {
                     MessageBox.error("Failed to create secret " + secret.secretKey + "!");
 
                     success = false;
                 });
+
+                model.setProperty(Constants.SECRETS_PATH, allSecrets);
             });
                 
             if (success) {
@@ -154,12 +187,10 @@ sap.ui.define([
             for (var i = 0; i < repository.secrets.length; i++) {
                 var secret = repository.secrets[i];
                 if (secret.status === Constants.STATUS_DELETED) {
-                    await HttpUtils.sendDeleteRequest(Constants.SECRET_ENDPOINT_DELETE.replace("{id}", secret.id))
+                    await HttpUtils.sendDeleteRequest(Constants.SECRET_ENDPOINT_DELETE.replace("{id}", secret.id).replace("{repositoryId}", repository.id))
                     .then(_ => {
                         var selectedItemSecrets = model.getProperty(Constants.SELECTED_ITEM_PATH + "/secrets");
                         selectedItemSecrets.splice(i, 1);
-
-                        MessageToast.show("Secret deleted successfully!");
                     })
                     .catch(_ => {
                         MessageBox.error("Failed to delete secret" + secret.secretKey + "!");
@@ -170,13 +201,16 @@ sap.ui.define([
             };
 
             // Create and update secrets
-            repository.secrets.forEach((secret, index) => {
-                if (secret.secretValue === null) {
+            var allSecrets = model.getProperty(Constants.SECRETS_PATH);
+            for (var index = 0; index < repository.secrets.length; index++) {
+                var secret = repository.secrets[index];
+
+                if (secret.secretValue === null && secret.status !== Constants.STATUS_ADDED) {
                     return;
                 }
 
                 if (secret.status === Constants.STATUS_CREATED) {
-                    HttpUtils.sendPostRequest(Constants.SECRET_ENDPOINT_SAVE, secret)
+                    await HttpUtils.sendPostRequest(Constants.SECRET_ENDPOINT_SAVE, secret)
                     .then(data => {
                         secret = data;
                         secret.secretValue = null;
@@ -185,7 +219,9 @@ sap.ui.define([
 
                         model.setProperty(Constants.SELECTED_ITEM_PATH + "/secrets/" + index, secret);
 
-                        MessageToast.show("Secret created successfully!");
+                        var newSecret = Object.assign({}, secret);
+                        newSecret.repositoryId = 0;
+                        allSecrets.push(newSecret);
                     })
                     .catch(_ => {
                         MessageBox.error("Failed to create secret " + secret.secretKey + "!");
@@ -193,7 +229,7 @@ sap.ui.define([
                         success = false;
                     });
                 } else if (secret.status === Constants.STATUS_MODIFIED) {
-                    HttpUtils.sendPutRequest(Constants.SECRET_ENDPOINT_UPDATE.replace("{id}", secret.id), secret)
+                    await HttpUtils.sendPutRequest(Constants.SECRET_ENDPOINT_UPDATE.replace("{id}", secret.id), secret)
                     .then(data => {
                         secret = data;
                         secret.secretValue = null;
@@ -201,29 +237,53 @@ sap.ui.define([
                         secret.isNew = false;
 
                         model.setProperty(Constants.SELECTED_ITEM_PATH + "/secrets/" + index, secret);
-
-                        MessageToast.show("Secret updated successfully!");
                     })
                     .catch(_ => {
                         MessageBox.error("Failed to update secret " + secret.secretKey + "!");
 
                         success = false;
                     });
+                } else if (secret.status === Constants.STATUS_ADDED) {
+                    await HttpUtils.sendPutRequest(Constants.SECRET_ENDPOINT_ADD_TO_REPOSITORY.replace("{id}", secret.id).replace("{repositoryId}", secret.repositoryId), null)
+                    .then(data => {
+                        secret = data;
+                        secret.secretValue = null;
+                        secret.status = Constants.STATUS_NONE;
+                        secret.isNew = false;
+
+                        model.setProperty(Constants.SELECTED_ITEM_PATH + "/secrets/" + index, secret);
+                    })
+                    .catch(_ => {
+                        MessageBox.show("Failed to add secret " + secret.secretKey + "!");
+
+                        success = false;
+                    });
                 }
-            });
+            }
 
             // Update repository
             if (repository.url !== originalRepository.url) {
                 HttpUtils.sendPutRequest(Constants.REPOSITORY_ENDPOINT_UPDATE.replace("{id}", repository.id), repository)
                 .then(data => {
                     repository.url = data.url;
-
-                    MessageToast.show("Repository updated successfully!");
                 })
                 .catch(_ => {
                     MessageBox.error("Failed to update repository " + secret.secretKey + "!");
                 });
             }
+
+            // Remove secrets that aren't used by any repository
+            var allRepositories = model.getProperty(Constants.REPOSITORIES_PATH);
+            var repositorySecretKeys = new Set();
+            allRepositories.forEach(repo => {
+                repo.secrets.forEach(secret => {
+                    repositorySecretKeys.add(secret.secretKey);
+                });
+            });
+
+            var filteredSecrets = allSecrets.filter(secret => repositorySecretKeys.has(secret.secretKey));
+
+            model.setProperty(Constants.SECRETS_PATH, filteredSecrets);
 
             if (success) {
                 MessageBox.success("Repository updated successfully!");
