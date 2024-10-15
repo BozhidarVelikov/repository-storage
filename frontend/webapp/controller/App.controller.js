@@ -108,9 +108,6 @@ sap.ui.define([
 
             model.setProperty(Constants.SELECTED_ITEM_PATH, selectedItem);
 
-            var secretValueInput = this.byId(Constants.VERIFY_DIALOG_SECRET_VALUE_INPUT_ID);
-            secretValueInput.setValue("");
-
             var dialog = this.byId(Constants.VERIFY_DIALOG_ID);
             dialog.open();
         },
@@ -158,46 +155,26 @@ sap.ui.define([
         onVerifySecretDialogVerifyPress: function() {
             var model = this.getView().getModel();
             var selectedRepository = model.getProperty(Constants.SELECTED_ITEM_PATH);
-            var selectedKeyId = model.getProperty(Constants.SELECTED_KEY_ID_PATH);
-            var enteredSecretValue = this.byId(Constants.VERIFY_DIALOG_SECRET_VALUE_INPUT_ID).getValue();
 
             if (selectedRepository === null) {
                 MessageBox.error("Please choose a repository!");
                 return;
             }
 
-            if (selectedKeyId === null) {
-                MessageBox.error("Please choose a secret!");
-                return;
-            }
-
-            for (var i = 0; i < selectedRepository.secrets.length; i++) {
-                if (selectedRepository.secrets[i].id == selectedKeyId) {
-                    var selectedSecretCopy = Object.assign(selectedRepository.secrets[i]);
-                    selectedSecretCopy.secretValue = enteredSecretValue;
-
-                    fetch(Constants.SECRET_ENDPOINT_VERIFY, {
-                        method: "POST",
-                        headers: {
-                            "Content-Type": "application/json",
-                        },
-                        body: JSON.stringify(selectedSecretCopy)
-                    })
-                    .then(response => {
-                        if (response.ok) {
-                            MessageBox.success("Secret value is correct!");
-                        } else {
-                            MessageBox.error("Secret value is wrong!");
-                        }
-                    })
-                    .catch(error => {
-                        console.log(error);
-                        MessageBox.show("An error occurred while verifying secret!");
-                    });
-
-                    break;
+            fetch(Constants.REPOSITORY_ENDPOINT_VERIFY.replace("{id}", selectedRepository.id), {
+                method: "GET"
+            })
+            .then(response => {
+                if (response.ok) {
+                    MessageBox.success("Secret value is correct!");
+                } else {
+                    MessageBox.error("Secret value is wrong!");
                 }
-            }
+            })
+            .catch(error => {
+                console.log(error);
+                MessageBox.show("An error occurred while verifying secret!");
+            });
         },
 
         /**
@@ -520,7 +497,7 @@ sap.ui.define([
             // Retrieve the secret item associated with the input
             var secret = inputContext.getObject();
             secret.secretValue = event.getParameter("value");
-            secret.status = secret.status === Constants.STATUS_CREATED || Constants.STATUS_ADDED ? secret.status : Constants.STATUS_MODIFIED;
+            secret.status = secret.status === Constants.STATUS_CREATED || secret.status === Constants.STATUS_ADDED ? secret.status : Constants.STATUS_MODIFIED;
 
             model.setProperty(Constants.SELECTED_ITEM_PATH + "/secrets/" + secretIndex, secret);
         },

@@ -168,13 +168,11 @@ public class SecretService {
     public ResponseEntity<SecretDTO> addSecretToRepository(Long id, Long repositoryId) {
         Optional<Repository> potentialRepository = repositoryRepository.findById(repositoryId);
         if (potentialRepository.isEmpty()) {
-            System.out.println("Error 1");
             return ResponseEntity.notFound().build();
         }
 
         Optional<Secret> potentialSecret = secretRepository.findById(id);
         if (potentialSecret.isEmpty()) {
-            System.out.println("Error 2");
             return ResponseEntity.notFound().build();
         }
 
@@ -182,17 +180,9 @@ public class SecretService {
         secret.getRepositories().add(potentialRepository.get());
         secretRepository.save(secret);
 
-        secret.getRepositories().forEach(r -> {
-            System.out.println(r.getUrl());
-        });
-
         Repository repository = potentialRepository.get();
         repository.getSecrets().add(potentialSecret.get());
         repositoryRepository.save(repository);
-
-        repository.getSecrets().forEach(s -> {
-            System.out.println(s.getSecretKey());
-        });
 
         SecretDTO secretDTO = SecretDTO.toDTO(secret, repositoryId);
 

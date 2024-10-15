@@ -65,7 +65,7 @@
                 id="verifyDialog"
                 title="Verify Secrets"
                 contentWidth="640px"
-                contentHeight="210px">
+                contentHeight="97px">
                 <content>
                     <VBox class="sapUiSmallMargin">
                         <Label text="Url"/>
@@ -76,14 +76,6 @@
                             items="{/repositories}" >
                             <core:Item key="{id}" text="{url}"/>
                         </Select>
-                        <Label text="Key"/>
-                        <Select
-                            id="verifyDialogSecretKeyComboBox"
-                            selectedKey="{/selectedKeyId}"
-                            items="{/selectedItem/secrets}">
-                            <core:Item key="{id}" text="{secretKey}"/>
-                        </Select>
-                        <Input id="verifyDialogSecretValueInput"/>
                     </VBox>
                 </content>
                 <buttons>

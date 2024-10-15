@@ -4,12 +4,14 @@ import com.bvelikov.repository_storage.dto.RepositoryDTO;
 import com.bvelikov.repository_storage.model.Repository;
 import com.bvelikov.repository_storage.repository.RepositoryRepository;
 import com.bvelikov.repository_storage.repository.SecretRepository;
+import com.bvelikov.repository_storage.security.encryption.EncryptionUtil;
 import com.bvelikov.repository_storage.service.SecretService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataIntegrityViolationException;
-import org.springframework.http.HttpStatusCode;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.*;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.client.HttpClientErrorException;
+import org.springframework.web.client.RestTemplate;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -19,6 +21,8 @@ import java.util.Optional;
 @RestController()
 @RequestMapping("/api/repository")
 public class RepositoryController {
+    private final RestTemplate restTemplate = new RestTemplate();
+
     @Autowired
     private RepositoryRepository repositoryRepository;
 
@@ -63,6 +67,65 @@ public class RepositoryController {
             return ResponseEntity.ok(RepositoryDTO.toDTO(repository));
         } catch(DataIntegrityViolationException e) {
             return ResponseEntity.badRequest().build();
+        }
+    }
+
+    @GetMapping("/verify/{id}")
+    public ResponseEntity<Void> verifyRepository(@PathVariable Long id) {
+        Optional<Repository> potentialRepository = repositoryRepository.findById(id);
+        if (potentialRepository.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+
+        Repository repository = potentialRepository.get();
+        switch (repository.getRepositoryType()) {
+            case GIT_HUB:
+                return verifyGitHubRepository(repository);
+            case GIT_LAB:
+            case BIT_BUCKET:
+            default:
+                return ResponseEntity.badRequest().build();
+        }
+    }
+
+    private ResponseEntity<Void> verifyGitHubRepository(Repository repository) {
+        if (repository.getSecrets().size() > 1) {
+            return ResponseEntity.badRequest().build();
+        }
+
+        String ownerAndName = repository.getUrl().substring(repository.getUrl().indexOf("github.com/") + 11);
+        String[] ownerAndNameSplit = ownerAndName.split("/", 2);
+
+        String gitHubApiUrl = "https://api.github.com/repos/" + ownerAndNameSplit[0] + "/" + ownerAndNameSplit[1];
+
+        HttpHeaders headers = new HttpHeaders();
+
+        if (repository.getSecrets().size() == 1) {
+            String token = repository.getSecrets().iterator().next().getSecretValue();
+            try {
+                token = EncryptionUtil.decrypt(token);
+            } catch (Exception e) {
+                return ResponseEntity.internalServerError().build();
+            }
+
+            headers.setBearerAuth(token);
+        }
+
+        HttpEntity<String> requestEntity = new HttpEntity<>(headers);
+
+        try {
+            // Make the API call to GitHub to validate the token
+            ResponseEntity<String> response = restTemplate.exchange(
+                    gitHubApiUrl, HttpMethod.GET, requestEntity, String.class);
+
+            // If the response is OK (200), the token is valid
+            if (response.getStatusCode().is2xxSuccessful()) {
+                return ResponseEntity.ok().build();
+            } else {
+                return ResponseEntity.status(response.getStatusCode()).build();
+            }
+        } catch (HttpClientErrorException e) {
+            return ResponseEntity.status(e.getStatusCode()).build();
         }
     }
 
